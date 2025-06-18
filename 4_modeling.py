@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import config
 
+# The new library for McNemar's test. You may need to install it: pip install mlxtend
+from mlxtend.evaluate import mcnemar_table, mcnemar
+
 from dython.nominal import associations
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
@@ -82,6 +85,7 @@ def main():
 
     all_results = []
     best_estimators = {}
+    all_predictions = {}  # Dictionary to store predictions for McNemar's test
 
     for threshold in config.CLUSTERING_THRESHOLDS_TO_TEST:
         feature_set_label = f"Clustered (Thresh={threshold})" if threshold is not None else "Original Features"
@@ -113,6 +117,8 @@ def main():
                 }
 
                 y_pred_test = best_estimator.predict(X_test_fs)
+                all_predictions[combo_key] = y_pred_test  # Store predictions
+
                 for metric_name, scorer_name in config.METRICS_TO_EVALUATE.items():
                     if 'f1' in metric_name:
                         score = f1_score(y_test_ravel, y_pred_test, average=metric_name.split('_')[-1], zero_division=0)
@@ -133,45 +139,81 @@ def main():
                 continue
 
     all_results_df = pd.DataFrame(all_results)
-
-    # Log the performance DataFrame
-    logging.info("\n--- Model Performance Summary ---")
-    logging.info(all_results_df.to_string())
-
     all_results_df.to_csv(config.DETAILED_RESULTS_CSV, index=False, float_format='%.6f')
     joblib.dump(best_estimators, config.BEST_ESTIMATORS_PATH)
 
     logging.info(f"\nComprehensive performance results saved to: {config.DETAILED_RESULTS_CSV}")
     logging.info(f"Saved dictionary of best estimators to: {config.BEST_ESTIMATORS_PATH}")
 
-    # --- Plot Confusion Matrices for Top 5 Models ---
-    logging.info("\n--- Generating and Logging Confusion Matrices for Top 5 Models ---")
+    # --- McNemar's Test and Selection for Plotting ---
+    logging.info("\n--- Starting McNemar's Test for Model Comparison ---")
+    models_to_plot = []
+    if not all_results_df.empty:
+        # Identify the top performing model
+        top_model_row = all_results_df.loc[all_results_df['Test F1 Weighted'].idxmax()]
+        top_model_key = f"{top_model_row['Model']}_{top_model_row['Feature Set Name']}"
+        models_to_plot.append(top_model_key)  # Add the best model to the plot list
+        top_model_predictions = all_predictions[top_model_key]
+        top_model_feature_set = top_model_row['Feature Set Name']
+
+        logging.info(
+            f"Top performing model is '{top_model_key}'. Comparing it with other models on the same feature set ('{top_model_feature_set}').")
+
+        # Filter for other models run on the same feature set
+        comparison_df = all_results_df[(all_results_df['Feature Set Name'] == top_model_feature_set) & (
+                    all_results_df['Model'] != top_model_row['Model'])]
+
+        for _, row in comparison_df.iterrows():
+            comparison_model_key = f"{row['Model']}_{row['Feature Set Name']}"
+            comparison_model_predictions = all_predictions[comparison_model_key]
+
+            logging.info(f"\n--- McNemar's Test: '{top_model_key}' vs. '{comparison_model_key}' ---")
+
+            # Create the contingency table
+            tb = mcnemar_table(y_target=y_test_ravel,
+                               y_model1=top_model_predictions,
+                               y_model2=comparison_model_predictions)
+
+            logging.info("Contingency Table:")
+            logging.info(f"                  | Model 2 Correct | Model 2 Incorrect")
+            logging.info(f"------------------|-----------------|------------------")
+            logging.info(f"Model 1 Correct   |      {tb[0, 0]:<6}     |      {tb[0, 1]:<6}")
+            logging.info(f"Model 1 Incorrect |      {tb[1, 0]:<6}     |      {tb[1, 1]:<6}")
+
+            # Perform the test
+            chi2, p = mcnemar(ary=tb, corrected=True)
+
+            logging.info(f"  McNemar's test: chi-squared = {chi2:.4f}, p-value = {p:.4f}")
+
+            # Interpret the result and decide whether to plot the confusion matrix
+            if p < 0.05:
+                logging.info("  Result: The difference in error rates is statistically significant (p < 0.05).")
+            else:
+                logging.info(
+                    "  Result: The difference in error rates is not statistically significant (p >= 0.05). Adding to plot list.")
+                models_to_plot.append(comparison_model_key)
+
+    # --- Generate Confusion Matrices for Best and Statistically Similar Models ---
+    logging.info("\n--- Generating Confusion Matrices ---")
     plt.style.use(config.VISUALIZATION['plot_style'])
-    top_5 = all_results_df.sort_values(by='Test F1 Weighted', ascending=False).head(5)
 
-    # Log top 5 models dataframe to the log
-    logging.info("\n--- Top 5 Performing Models ---")
-    logging.info(top_5.to_string())
+    # Create a set to handle potential duplicates, then convert back to list
+    unique_models_to_plot = list(set(models_to_plot))
+    logging.info(f"Will generate confusion matrices for the following models: {unique_models_to_plot}")
 
-    for _, row in top_5.iterrows():
-        combo_key = f"{row['Model']}_{row['Feature Set Name']}"
+    for combo_key in unique_models_to_plot:
         estimator = best_estimators[combo_key]
-
-        selected_features_for_pred = get_selected_features_by_clustering(X_train, row['Threshold Value'],
-                                                                         config.CLUSTERING_LINKAGE_METHOD)
-        X_test_for_pred = X_test.reindex(columns=selected_features_for_pred, fill_value=0)
-        y_pred = estimator.predict(X_test_for_pred)
-
-        # Log classification report
-        report = classification_report(y_test_ravel, y_pred, target_names=[f"Class {c}" for c in estimator.classes_])
-        logging.info(f"\nClassification Report for {combo_key}:\n{report}")
+        y_pred = all_predictions[combo_key]
 
         cm = confusion_matrix(y_test_ravel, y_pred)
 
-        # Log confusion matrix
-        logging.info(f"Confusion Matrix for {combo_key}:\n{cm}")
+        # FIX: Check for .classes_ attribute, otherwise get labels from y_test
+        if hasattr(estimator, 'classes_'):
+            labels = estimator.classes_
+        else:
+            labels = np.unique(y_test_ravel)
 
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=estimator.classes_)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
 
         fig, ax = plt.subplots(figsize=(8, 6))
         disp.plot(ax=ax, cmap='Blues')
