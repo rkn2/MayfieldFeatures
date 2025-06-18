@@ -133,6 +133,11 @@ def main():
                 continue
 
     all_results_df = pd.DataFrame(all_results)
+
+    # Log the performance DataFrame
+    logging.info("\n--- Model Performance Summary ---")
+    logging.info(all_results_df.to_string())
+
     all_results_df.to_csv(config.DETAILED_RESULTS_CSV, index=False, float_format='%.6f')
     joblib.dump(best_estimators, config.BEST_ESTIMATORS_PATH)
 
@@ -140,9 +145,13 @@ def main():
     logging.info(f"Saved dictionary of best estimators to: {config.BEST_ESTIMATORS_PATH}")
 
     # --- Plot Confusion Matrices for Top 5 Models ---
-    logging.info("\n--- Generating Confusion Matrices for Top 5 Models ---")
+    logging.info("\n--- Generating and Logging Confusion Matrices for Top 5 Models ---")
     plt.style.use(config.VISUALIZATION['plot_style'])
     top_5 = all_results_df.sort_values(by='Test F1 Weighted', ascending=False).head(5)
+
+    # Log top 5 models dataframe to the log
+    logging.info("\n--- Top 5 Performing Models ---")
+    logging.info(top_5.to_string())
 
     for _, row in top_5.iterrows():
         combo_key = f"{row['Model']}_{row['Feature Set Name']}"
@@ -153,7 +162,15 @@ def main():
         X_test_for_pred = X_test.reindex(columns=selected_features_for_pred, fill_value=0)
         y_pred = estimator.predict(X_test_for_pred)
 
+        # Log classification report
+        report = classification_report(y_test_ravel, y_pred, target_names=[f"Class {c}" for c in estimator.classes_])
+        logging.info(f"\nClassification Report for {combo_key}:\n{report}")
+
         cm = confusion_matrix(y_test_ravel, y_pred)
+
+        # Log confusion matrix
+        logging.info(f"Confusion Matrix for {combo_key}:\n{cm}")
+
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=estimator.classes_)
 
         fig, ax = plt.subplots(figsize=(8, 6))

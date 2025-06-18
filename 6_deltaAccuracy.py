@@ -142,7 +142,7 @@ def main():
                 'p-value': p_value
             })
 
-    # 4. Visualize Results
+    # 4. Log and Visualize Results
     if not all_importances:
         logging.error("No importance results were generated.")
         return
@@ -153,6 +153,11 @@ def main():
     if significant_df.empty:
         logging.warning(f"No statistically significant features found with p-value < {config.P_VALUE_THRESHOLD}.")
         return
+
+    # Log the significant features dataframe
+    logging.info("\n--- Statistically Significant Feature Importances (p < {config.P_VALUE_THRESHOLD}) ---")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        logging.info(significant_df.sort_values(by='Importance (Mean Drop)', ascending=False).to_string())
 
     max_importance_order = significant_df.groupby('Cluster Label')['Importance (Mean Drop)'].max().sort_values(
         ascending=False).index

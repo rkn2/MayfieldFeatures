@@ -81,7 +81,7 @@ def get_selected_features_by_clustering(original_df, distance_thresh, linkage_me
 
 def plot_visualizations(all_shap_values, all_test_samples, output_dir):
     """Generates and saves all SHAP and feature correlation plots."""
-    logging.info("\n--- Generating All Visualizations ---")
+    logging.info("\n--- Generating and Logging All Visualizations ---")
     plt.style.use(config.VISUALIZATION['plot_style'])
 
     # 1. Composite Bar Chart
@@ -98,6 +98,11 @@ def plot_visualizations(all_shap_values, all_test_samples, output_dir):
     combined_importance_df = pd.concat(all_importance_dfs, ignore_index=True)
     top_features = combined_importance_df.groupby('Feature')['Importance'].max().nlargest(15).index
 
+    # Log the dataframe for the composite bar chart
+    logging.info("\n--- SHAP Composite Bar Chart Data ---")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        logging.info(combined_importance_df[combined_importance_df['Feature'].isin(top_features)].to_string())
+
     plt.figure(figsize=(16, 12))
     sns.barplot(x='Importance', y='Feature', hue='Model',
                 data=combined_importance_df[combined_importance_df['Feature'].isin(top_features)],
@@ -111,23 +116,81 @@ def plot_visualizations(all_shap_values, all_test_samples, output_dir):
     logging.info("  Saved composite SHAP bar chart.")
 
     # 2. Beeswarm Plots
+    logging.info("\n--- Generating and Logging Beeswarm Plot Information ---")
     for model_key, shap_expl in all_shap_values.items():
-        if len(shap_expl.values.shape) == 3:  # Multi-class classification
+        test_sample = all_test_samples[model_key]
+        feature_names = test_sample.columns
+
+        # Logic for Multi-class classification
+        if len(shap_expl.values.shape) == 3:
             num_classes = shap_expl.values.shape[2]
             for i in range(num_classes):
+                shap_values_for_class = shap_expl.values[:, :, i]
+
+                # Log Summary Data for Beeswarm
+                mean_abs_shap_per_feature = np.abs(shap_values_for_class).mean(axis=0)
+                top_feature_indices = np.argsort(mean_abs_shap_per_feature)[-20:]
+
+                summary_data = []
+                for idx in top_feature_indices:
+                    feature_name = feature_names[idx]
+                    feature_values_for_corr = test_sample[feature_name].values.astype(float)
+                    shap_values_for_corr = shap_values_for_class[:, idx]
+                    corr, _ = pearsonr(feature_values_for_corr, shap_values_for_corr)
+
+                    summary_data.append({
+                        "Feature": feature_name,
+                        "Mean Abs SHAP": mean_abs_shap_per_feature[idx],
+                        "Mean Feature Value": feature_values_for_corr.mean(),
+                        "Correlation (Feature Val vs SHAP)": corr
+                    })
+
+                summary_df = pd.DataFrame(summary_data).sort_values(by="Mean Abs SHAP", ascending=False)
+                logging.info(f"\n--- Beeswarm Summary for: Class {i} ({model_key}) ---")
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+                    logging.info(summary_df.to_string())
+
+                # Generate Plot
                 plt.figure()
-                shap.summary_plot(shap_expl.values[:, :, i], all_test_samples[model_key], show=False, plot_type="dot")
+                shap.summary_plot(shap_values_for_class, test_sample, show=False, plot_type="dot")
                 plt.title(f'SHAP Beeswarm for Class {i} ({model_key})', fontsize=14)
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_dir, f'shap_beeswarm_class_{i}_{model_key}.png'))
                 plt.close()
-        else:  # Regression or single output models
+
+        # Logic for Regression or single output models
+        else:
+            # Log Summary Data
+            mean_abs_shap_per_feature = np.abs(shap_expl.values).mean(axis=0)
+            top_feature_indices = np.argsort(mean_abs_shap_per_feature)[-20:]
+
+            summary_data = []
+            for idx in top_feature_indices:
+                feature_name = feature_names[idx]
+                feature_values_for_corr = test_sample[feature_name].values.astype(float)
+                shap_values_for_corr = shap_expl.values[:, idx]
+                corr, _ = pearsonr(feature_values_for_corr, shap_values_for_corr)
+
+                summary_data.append({
+                    "Feature": feature_name,
+                    "Mean Abs SHAP": mean_abs_shap_per_feature[idx],
+                    "Mean Feature Value": feature_values_for_corr.mean(),
+                    "Correlation (Feature Val vs SHAP)": corr
+                })
+
+            summary_df = pd.DataFrame(summary_data).sort_values(by="Mean Abs SHAP", ascending=False)
+            logging.info(f"\n--- Beeswarm Summary for: {model_key} ---")
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+                logging.info(summary_df.to_string())
+
+            # Generate Plot
             plt.figure()
-            shap.summary_plot(shap_expl.values, all_test_samples[model_key], show=False, plot_type="dot")
+            shap.summary_plot(shap_expl.values, test_sample, show=False, plot_type="dot")
             plt.title(f'SHAP Beeswarm ({model_key})', fontsize=14)
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, f'shap_beeswarm_{model_key}.png'))
             plt.close()
+
     logging.info("  Saved individual SHAP beeswarm plots.")
 
     # 3. Synthesis Heatmaps
@@ -136,7 +199,7 @@ def plot_visualizations(all_shap_values, all_test_samples, output_dir):
 
 def plot_synthesis_heatmaps(all_shap_values, all_test_samples, top_features, output_dir):
     """Generates heatmaps synthesizing feature impact across all models for each class."""
-    logging.info("\n--- Generating Feature Impact Synthesis Heatmaps ---")
+    logging.info("\n--- Generating and Logging Feature Impact Synthesis Heatmaps ---")
 
     # Determine the set of unique classes from all models
     unique_classes = set()
@@ -172,6 +235,12 @@ def plot_synthesis_heatmaps(all_shap_values, all_test_samples, top_features, out
         df = pd.DataFrame(directional_data).set_index('model').T
         dir_df = df.applymap(lambda x: x[0] if isinstance(x, tuple) else np.nan)
         mag_df = df.applymap(lambda x: x[1] if isinstance(x, tuple) else np.nan)
+
+        # Log the dataframes for the heatmap
+        logging.info(f"\n--- Feature Impact Synthesis Data for Class {class_idx} ---")
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+            logging.info("Directional Impact (Sign of Correlation):\n" + dir_df.to_string())
+            logging.info("\nImpact Magnitude (Mean Absolute SHAP):\n" + mag_df.to_string())
 
         plt.figure(figsize=(18, 14))
         sns.heatmap(dir_df, annot=mag_df, fmt=".3f", cmap=config.VISUALIZATION['diverging_palette'],

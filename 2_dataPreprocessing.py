@@ -133,8 +133,16 @@ def main():
     joblib.dump(y_test, config.Y_TEST_PATH)
     joblib.dump(preprocessor, config.PREPROCESSOR_PATH)
 
-    # 10. Visualize Distributions
-    logging.info("\nStep 10: Visualizing data distributions...")
+    # 10. Log and Visualize Distributions
+    logging.info("\nStep 10: Logging and visualizing data distributions...")
+
+    # Log the distributions
+    logging.info(f"\nOriginal Data Distribution:\n{df[config.TARGET_COLUMN].value_counts().to_string()}")
+    logging.info(f"\nTraining Data Distribution (Before Balancing):\n{y_train.value_counts().to_string()}")
+    logging.info(f"\nTraining Data Distribution (After {config.BALANCING_METHOD or 'No'} Balancing):\n{y_train_final.value_counts().to_string()}")
+    logging.info(f"\nTest Data Distribution:\n{y_test.value_counts().to_string()}")
+
+
     plt.style.use(config.VISUALIZATION['plot_style'])
     fig, axes = plt.subplots(2, 2, figsize=(18, 14))
     palette = config.VISUALIZATION['main_palette']
@@ -154,6 +162,7 @@ def main():
     plt.tight_layout()
     plt.savefig('data_distribution_summary.png')
     logging.info("Saved data distribution summary plot.")
+
 
     logging.info(f"--- Finished Script: 2_dataPreprocessing.py ---")
 
