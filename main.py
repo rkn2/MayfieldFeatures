@@ -21,6 +21,7 @@ def main():
     logging.info("--- Starting the Data Analysis Pipeline ---")
 
     scripts_to_run = [
+        'config.py',
         '1_dataCleaning.py',
         '2_dataPreprocessing.py',
         '4_modeling.py',

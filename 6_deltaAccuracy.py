@@ -167,9 +167,9 @@ def main():
     sns.barplot(x='Importance (Mean Drop)', y='Cluster Label', hue='Model (Thresh)',
                 data=significant_df, palette=config.VISUALIZATION['main_palette'], order=max_importance_order)
 
-    plt.title(f'Statistically Significant Feature Clusters (p < {config.P_VALUE_THRESHOLD})', fontsize=16)
+    plt.title(f'Statistically Significant Features (p < {config.P_VALUE_THRESHOLD})', fontsize=16)
     plt.xlabel(f"Mean Drop in Test F1 Weighted Score", fontsize=12)
-    plt.ylabel("Feature Cluster Representative", fontsize=12)
+    plt.ylabel("Feature", fontsize=12)
     plt.legend(title='Model (Threshold)')
     plt.tight_layout()
 

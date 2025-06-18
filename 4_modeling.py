@@ -139,6 +139,12 @@ def main():
                 continue
 
     all_results_df = pd.DataFrame(all_results)
+
+    # Log the full results dataframe
+    logging.info("\n--- Full Model Performance Report ---")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        logging.info(all_results_df.to_string())
+
     all_results_df.to_csv(config.DETAILED_RESULTS_CSV, index=False, float_format='%.6f')
     joblib.dump(best_estimators, config.BEST_ESTIMATORS_PATH)
 
@@ -147,12 +153,12 @@ def main():
 
     # --- McNemar's Test and Selection for Plotting ---
     logging.info("\n--- Starting McNemar's Test for Model Comparison ---")
-    models_to_plot = []
+    models_to_plot_cm = []
     if not all_results_df.empty:
         # Identify the top performing model
         top_model_row = all_results_df.loc[all_results_df['Test F1 Weighted'].idxmax()]
         top_model_key = f"{top_model_row['Model']}_{top_model_row['Feature Set Name']}"
-        models_to_plot.append(top_model_key)  # Add the best model to the plot list
+        models_to_plot_cm.append(top_model_key)  # Add the best model to the plot list
         top_model_predictions = all_predictions[top_model_key]
         top_model_feature_set = top_model_row['Feature Set Name']
 
@@ -161,7 +167,7 @@ def main():
 
         # Filter for other models run on the same feature set
         comparison_df = all_results_df[(all_results_df['Feature Set Name'] == top_model_feature_set) & (
-                    all_results_df['Model'] != top_model_row['Model'])]
+                all_results_df['Model'] != top_model_row['Model'])]
 
         for _, row in comparison_df.iterrows():
             comparison_model_key = f"{row['Model']}_{row['Feature Set Name']}"
@@ -191,14 +197,40 @@ def main():
             else:
                 logging.info(
                     "  Result: The difference in error rates is not statistically significant (p >= 0.05). Adding to plot list.")
-                models_to_plot.append(comparison_model_key)
+                models_to_plot_cm.append(comparison_model_key)
+
+    # --- Generate Performance Bar Chart ---
+    logging.info("\n--- Generating Performance Bar Chart ---")
+    plt.style.use(config.VISUALIZATION['plot_style'])
+
+    top_performers = all_results_df[all_results_df['Test F1 Weighted'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT].copy()
+
+    if not top_performers.empty:
+        top_performers['Model (Feature Set)'] = top_performers['Model'] + ' (' + top_performers[
+            'Feature Set Name'] + ')'
+        top_performers = top_performers.sort_values(by='Test F1 Weighted', ascending=False)
+
+        plt.figure(figsize=(12, 8))
+        sns.barplot(x='Test F1 Weighted', y='Model (Feature Set)', data=top_performers,
+                    palette=config.VISUALIZATION['main_palette'])
+        plt.title(f"Top Performing Model Combinations (Test F1 Weighted > {config.PERFORMANCE_THRESHOLD_FOR_PLOT})")
+        plt.xlabel('Test F1 Weighted Score')
+        plt.ylabel('Model Combination')
+        plt.xlim(left=min(0.8, top_performers['Test F1 Weighted'].min() * 0.98))
+        plt.tight_layout()
+
+        barchart_filename = "top_performers_f1_score_barchart.png"
+        plt.savefig(os.path.join(config.BASE_RESULTS_DIR, barchart_filename))
+        plt.close()
+        logging.info(f"  Saved performance bar chart to {barchart_filename}")
+    else:
+        logging.warning(
+            f"No models found with F1 score > {config.PERFORMANCE_THRESHOLD_FOR_PLOT} to generate a bar chart.")
 
     # --- Generate Confusion Matrices for Best and Statistically Similar Models ---
     logging.info("\n--- Generating Confusion Matrices ---")
-    plt.style.use(config.VISUALIZATION['plot_style'])
 
-    # Create a set to handle potential duplicates, then convert back to list
-    unique_models_to_plot = list(set(models_to_plot))
+    unique_models_to_plot = list(set(models_to_plot_cm))
     logging.info(f"Will generate confusion matrices for the following models: {unique_models_to_plot}")
 
     for combo_key in unique_models_to_plot:
@@ -206,6 +238,14 @@ def main():
         y_pred = all_predictions[combo_key]
 
         cm = confusion_matrix(y_test_ravel, y_pred)
+
+        # Log classification report
+        report = classification_report(y_test_ravel, y_pred,
+                                       target_names=[f"Class {c}" for c in np.unique(y_test_ravel)], zero_division=0)
+        logging.info(f"\nClassification Report for {combo_key}:\n{report}")
+
+        # Log confusion matrix
+        logging.info(f"Confusion Matrix for {combo_key}:\n{cm}")
 
         # FIX: Check for .classes_ attribute, otherwise get labels from y_test
         if hasattr(estimator, 'classes_'):
