@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import config
 
-# The new library for McNemar's test. You may need to install it: pip install mlxtend
 from mlxtend.evaluate import mcnemar_table, mcnemar
 
 from dython.nominal import associations
