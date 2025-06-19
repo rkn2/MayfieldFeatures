@@ -17,8 +17,8 @@ DATA_DIR = 'processed_ml_data'
 BASE_RESULTS_DIR = 'clustering_performance_results'
 SHAP_RESULTS_DIR = 'shap_results_top_performers'
 REPORT_DIR = 'reports'
-INPUT_CSV_PATH = 'QuadState_Tornado_DataInputv2.csv'
-CLEANED_CSV_PATH = 'cleaned_data_latlong.csv'
+INPUT_CSV_PATH = 'QuadState_Tornado_DataInput_Categorical.csv'
+CLEANED_CSV_PATH = 'cleaned_data_categorical_latlong.csv'
 PIPELINE_LOG_PATH = 'pipeline.log'
 REPORT_FILENAME = 'pipeline_visual_report.pdf'
 DETAILED_RESULTS_CSV = os.path.join(BASE_RESULTS_DIR, 'clustering_performance_detailed_results.csv')
@@ -55,8 +55,14 @@ CLASS_MAPPINGS = {
     'B': {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, 5: 2}
 }
 BALANCING_METHOD = 'SMOTE'
-PERFORM_RFE = True
-N_FEATURES_TO_SELECT = 50
+
+# --- New settings for Recursive Feature Elimination with Cross-Validation ---
+PERFORM_RFECV = True              # Set to True to run RFECV, False to skip
+RFECV_MIN_FEATURES = 40           # The minimum number of features to consider
+RFECV_CV_FOLDS = 5                # Number of folds for cross-validation
+RFECV_SCORING_METRIC = 'accuracy' # The metric to optimize
+RFECV_STEP = 1                    # How many features to remove at each step
+
 KEYWORDS_TO_REMOVE_FROM_X = [
     'damage', 'status_u', 'exist', 'demolish', 'failure', 'after'
 ]

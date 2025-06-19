@@ -12,9 +12,9 @@ import config  # Import the configuration file
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.feature_selection import RFE
+from sklearn.feature_selection import RFECV
 from sklearn.ensemble import RandomForestClassifier
-
+from sklearn.model_selection import StratifiedKFold
 # Set the random seed for reproducibility
 np.random.seed(config.RANDOM_STATE)
 
@@ -106,14 +106,47 @@ def main():
     X_test_processed = pd.DataFrame(preprocessor.transform(X_test), columns=preprocessor.get_feature_names_out(),
                                     index=X_test.index)
 
-    # 7. Recursive Feature Elimination (RFE)
-    if config.PERFORM_RFE:
-        logging.info(f"\nStep 7: Performing RFE to select top {config.N_FEATURES_TO_SELECT} features...")
-        selector = RFE(estimator=RandomForestClassifier(n_estimators=100, random_state=config.RANDOM_STATE, n_jobs=-1),
-                       n_features_to_select=config.N_FEATURES_TO_SELECT, step=0.1)
+    # 7. Recursive Feature Elimination with Cross-Validation (RFECV)
+    if config.PERFORM_RFECV:
+        logging.info(f"\nStep 7: Performing RFECV to find the optimal number of features...")
+        logging.info(f"  - CV Folds: {config.RFECV_CV_FOLDS}, Scoring: {config.RFECV_SCORING_METRIC}")
+
+        # The model that will be used to evaluate feature subsets
+        estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
+
+        # The cross-validation strategy
+        cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
+
+        # Initialize the RFECV selector with parameters from the config file
+        selector = RFECV(
+            estimator=estimator,
+            step=config.RFECV_STEP,
+            cv=cv_strategy,
+            scoring=config.RFECV_SCORING_METRIC,
+            min_features_to_select=config.RFECV_MIN_FEATURES,
+            n_jobs=-1  # Use all available CPU cores
+        )
+
+        logging.info("  Fitting RFECV selector... This may take some time.")
         selector.fit(X_train_processed, y_train)
-        X_train_processed = X_train_processed.loc[:, selector.support_]
-        X_test_processed = X_test_processed.loc[:, selector.support_]
+        logging.info("  RFECV fitting complete.")
+
+        # Log the results of the selection
+        optimal_feature_count = selector.n_features_
+        logging.info(f"  Optimal number of features selected: {optimal_feature_count}")
+
+        # Get the names of the features that were selected as optimal
+        selected_features = X_train_processed.columns[selector.support_]
+        logging.info(f"  Selected features: {selected_features.tolist()}")
+
+        # Reduce the training and testing sets to only the selected features
+        X_train_processed = X_train_processed[selected_features]
+        X_test_processed = X_test_processed[selected_features]
+
+        logging.info(f"  Shape of X_train after RFECV: {X_train_processed.shape}")
+
+    else:
+        logging.info("\nStep 7: Skipping RFECV as per config setting.")
 
     # 8. Balance Training Data
     X_train_final, y_train_final = X_train_processed, y_train
