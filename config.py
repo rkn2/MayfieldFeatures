@@ -61,7 +61,7 @@ BALANCING_METHOD = 'SMOTE'
 PERFORM_RFECV = True              # Set to True to run RFECV, False to skip
 RFECV_MIN_FEATURES = 15           # The minimum number of features to consider
 RFECV_CV_FOLDS = 5                # Number of folds for cross-validation
-RFECV_SCORING_METRIC = 'accuracy' # The metric to optimize
+RFECV_SCORING_METRIC = 'f1_macro' # The metric to optimize
 RFECV_STEP = 1                    # How many features to remove at each step
 RFECV_USE_1SE_RULE = True # SET TO True TO FIND THE SIMPLEST MODEL WITHIN 1 S.E. OF THE BEST
 
@@ -73,7 +73,7 @@ KEYWORDS_TO_REMOVE_FROM_X = [
 CLUSTERING_THRESHOLDS_TO_TEST = [None]
 CLUSTERING_LINKAGE_METHOD = 'average'
 N_SPLITS_CV = 5
-GRIDSEARCH_SCORING_METRIC = 'f1_weighted'
+GRIDSEARCH_SCORING_METRIC = 'f1_macro'
 PERFORMANCE_THRESHOLD_FOR_PLOT = 0.8
 N_PERMUTATION_REPEATS = 100  # Added this line
 P_VALUE_THRESHOLD = 0.05    # Added this line
@@ -83,18 +83,17 @@ METRICS_TO_EVALUATE = {
 }
 
 MODELS_TO_BENCHMARK = {
-    "Logistic Regression": LogisticRegression(random_state=RANDOM_STATE, max_iter=2000, solver='liblinear'),
-    "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
-    "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+    "Logistic Regression": LogisticRegression(random_state=RANDOM_STATE, max_iter=2000, solver='liblinear'), # <-- CHANGED
+    "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE), # <-- CHANGED
+    "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1), # <-- CHANGED
     "Gradient Boosting": GradientBoostingClassifier(random_state=RANDOM_STATE),
-    "Hist Gradient Boosting": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
+    "Hist Gradient Boosting": HistGradientBoostingClassifier(random_state=RANDOM_STATE), # <-- CHANGED
     "XGBoost": xgb.XGBClassifier(random_state=RANDOM_STATE, eval_metric='mlogloss'),
-    "LightGBM": lgb.LGBMClassifier(random_state=RANDOM_STATE, verbosity=-1),
+    "LightGBM": lgb.LGBMClassifier(random_state=RANDOM_STATE, verbosity=-1), # <-- CHANGED
     "Ordinal Logistic (AT)": mord.LogisticAT(),
     "Ordinal Ridge": mord.OrdinalRidge(),
     "Ordinal LAD": mord.LAD()
 }
-
 PARAM_GRIDS = {
     "Logistic Regression": {'penalty': ['l1', 'l2'], 'C': [0.1, 1.0, 10.0]},
     "Decision Tree": {'criterion': ['gini', 'entropy'], 'max_depth': [4, 6, 8], 'min_samples_leaf': [10, 15]},
