@@ -38,7 +38,8 @@ SPECIFIC_COLUMNS_TO_DROP = [
     'building_name_listing', 'building_name_current', 'notes', 'tornado_name',
     'tornado_EF', 'tornado_start_lat', 'tornado_start_long', 'tornado_end_lat',
     'tornado_end_long', 'national_register_listing_year', 'town',
-    'located_in_historic_district', 'hazards_present_u'
+    'located_in_historic_district', 'hazards_present_u',
+    'latitude', 'longitude'
 ]
 COLUMNS_FOR_VALUE_REPLACEMENT = {
     'wall_thickness': {'un': '', 'not_applicable': 0},
@@ -58,10 +59,11 @@ BALANCING_METHOD = 'SMOTE'
 
 # --- New settings for Recursive Feature Elimination with Cross-Validation ---
 PERFORM_RFECV = True              # Set to True to run RFECV, False to skip
-RFECV_MIN_FEATURES = 40           # The minimum number of features to consider
+RFECV_MIN_FEATURES = 15           # The minimum number of features to consider
 RFECV_CV_FOLDS = 5                # Number of folds for cross-validation
 RFECV_SCORING_METRIC = 'accuracy' # The metric to optimize
 RFECV_STEP = 1                    # How many features to remove at each step
+RFECV_USE_1SE_RULE = True # SET TO True TO FIND THE SIMPLEST MODEL WITHIN 1 S.E. OF THE BEST
 
 KEYWORDS_TO_REMOVE_FROM_X = [
     'damage', 'status_u', 'exist', 'demolish', 'failure', 'after'

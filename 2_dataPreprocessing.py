@@ -12,7 +12,7 @@ import config  # Import the configuration file
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.feature_selection import RFECV
+from sklearn.feature_selection import RFE, RFECV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 # Set the random seed for reproducibility
@@ -111,43 +111,86 @@ def main():
         logging.info(f"\nStep 7: Performing RFECV to find the optimal number of features...")
         logging.info(f"  - CV Folds: {config.RFECV_CV_FOLDS}, Scoring: {config.RFECV_SCORING_METRIC}")
 
-        # The model that will be used to evaluate feature subsets
         estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
-
-        # The cross-validation strategy
         cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
 
-        # Initialize the RFECV selector with parameters from the config file
-        selector = RFECV(
+        rfecv_selector = RFECV(
             estimator=estimator,
             step=config.RFECV_STEP,
             cv=cv_strategy,
             scoring=config.RFECV_SCORING_METRIC,
             min_features_to_select=config.RFECV_MIN_FEATURES,
-            n_jobs=-1  # Use all available CPU cores
+            n_jobs=-1
         )
 
         logging.info("  Fitting RFECV selector... This may take some time.")
-        selector.fit(X_train_processed, y_train)
+        rfecv_selector.fit(X_train_processed, y_train)
         logging.info("  RFECV fitting complete.")
 
-        # Log the results of the selection
-        optimal_feature_count = selector.n_features_
-        logging.info(f"  Optimal number of features selected: {optimal_feature_count}")
+        # Determine the number of features to select
+        optimal_feature_count = rfecv_selector.n_features_
+        logging.info(f"  RFECV raw optimal number of features: {optimal_feature_count}")
 
-        # Get the names of the features that were selected as optimal
-        selected_features = X_train_processed.columns[selector.support_]
-        logging.info(f"  Selected features: {selected_features.tolist()}")
+        # --- NEW: Apply the "One Standard Error" Rule if enabled ---
+        if config.RFECV_USE_1SE_RULE:
+            logging.info("  Applying the 'One Standard Error' rule to find a simpler model.")
 
-        # Reduce the training and testing sets to only the selected features
+            cv_scores = rfecv_selector.cv_results_['mean_test_score']
+            cv_scores_std = rfecv_selector.cv_results_['std_test_score']
+
+            best_score_idx = np.argmax(cv_scores)
+            best_score = cv_scores[best_score_idx]
+            best_score_std = cv_scores_std[best_score_idx]
+
+            performance_threshold = best_score - best_score_std
+            logging.info(f"  Performance threshold (best score - 1 SE): {performance_threshold:.4f}")
+
+            candidate_indices = np.where(cv_scores >= performance_threshold)[0]
+            best_simpler_model_idx = candidate_indices[0]
+
+            optimal_feature_count = best_simpler_model_idx + config.RFECV_MIN_FEATURES
+            logging.info(
+                f"  Found a simpler model with {optimal_feature_count} features that performs within one SE of the best model.")
+
+        # --- PLOTTING RFECV RESULTS ---
+        logging.info("  Generating RFECV performance plot...")
+        plt.figure(figsize=(12, 8))
+        plt.style.use(config.VISUALIZATION['plot_style'])
+        x_axis_data = range(config.RFECV_MIN_FEATURES,
+                            len(rfecv_selector.cv_results_['mean_test_score']) + config.RFECV_MIN_FEATURES)
+        plt.plot(x_axis_data, rfecv_selector.cv_results_['mean_test_score'])
+        plt.xlabel("Number of Features Selected")
+        plt.ylabel(f"Cross-Validated Score ({config.RFECV_SCORING_METRIC.capitalize()})")
+        plt.title("RFECV Performance vs. Number of Features")
+        plt.axvline(x=optimal_feature_count, color='r', linestyle='--',
+                    label=f'Optimal Features: {optimal_feature_count}')
+        plt.legend()
+        plt.grid(True)
+        os.makedirs(config.BASE_RESULTS_DIR, exist_ok=True)
+        output_plot_path = os.path.join(config.BASE_RESULTS_DIR, "rfecv_performance_plot.png")
+        plt.savefig(output_plot_path)
+        plt.close()
+        logging.info(f"  Plot saved to: {output_plot_path}")
+
+        # --- Final Feature Selection using RFE with the chosen number ---
+        logging.info(f"  Selecting final {optimal_feature_count} features using RFE...")
+        final_selector = RFE(estimator=estimator, n_features_to_select=optimal_feature_count)
+        final_selector.fit(X_train_processed, y_train)
+
+        selected_features_mask = final_selector.get_support()
+        selected_features = X_train_processed.columns[selected_features_mask].tolist()
+
+        # --- NEW: Force inclusion of the random feature for sanity check ---
+        random_feature_name = 'num__random_feature'  # The name after preprocessing
+        if random_feature_name in X_train_processed.columns and random_feature_name not in selected_features:
+            logging.info(f"  Forcing inclusion of '{random_feature_name}' for model sanity check.")
+            selected_features.append(random_feature_name)
+
         X_train_processed = X_train_processed[selected_features]
         X_test_processed = X_test_processed[selected_features]
-
-        logging.info(f"  Shape of X_train after RFECV: {X_train_processed.shape}")
-
+        logging.info(f"  Final shape of X_train after selection: {X_train_processed.shape}")
     else:
         logging.info("\nStep 7: Skipping RFECV as per config setting.")
-
     # 8. Balance Training Data
     X_train_final, y_train_final = X_train_processed, y_train
     if config.BALANCING_METHOD and sampler_class:
