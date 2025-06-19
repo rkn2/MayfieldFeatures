@@ -155,7 +155,7 @@ def main():
     models_to_plot_cm = []
     if not all_results_df.empty:
         # Identify the top performing model
-        top_model_row = all_results_df.loc[all_results_df['Test F1 Weighted'].idxmax()]
+        top_model_row = all_results_df.loc[all_results_df['Test F1 Macro'].idxmax()]
         top_model_key = f"{top_model_row['Model']}_{top_model_row['Feature Set Name']}"
         models_to_plot_cm.append(top_model_key)  # Add the best model to the plot list
         top_model_predictions = all_predictions[top_model_key]
@@ -202,20 +202,20 @@ def main():
     logging.info("\n--- Generating Performance Bar Chart ---")
     plt.style.use(config.VISUALIZATION['plot_style'])
 
-    top_performers = all_results_df[all_results_df['Test F1 Weighted'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT].copy()
+    top_performers = all_results_df[all_results_df['Test F1 Macro'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT].copy()
 
     if not top_performers.empty:
         top_performers['Model (Feature Set)'] = top_performers['Model'] + ' (' + top_performers[
             'Feature Set Name'] + ')'
-        top_performers = top_performers.sort_values(by='Test F1 Weighted', ascending=False)
+        top_performers = top_performers.sort_values(by='Test F1 Macro', ascending=False)
 
         plt.figure(figsize=(12, 8))
-        sns.barplot(x='Test F1 Weighted', y='Model (Feature Set)', data=top_performers,
+        sns.barplot(x='Test F1 Macro', y='Model (Feature Set)', data=top_performers,
                     palette=config.VISUALIZATION['main_palette'])
-        plt.title(f"Top Performing Model Combinations (Test F1 Weighted > {config.PERFORMANCE_THRESHOLD_FOR_PLOT})")
-        plt.xlabel('Test F1 Weighted Score')
+        plt.title(f"Top Performing Model Combinations (Test F1 Macro > {config.PERFORMANCE_THRESHOLD_FOR_PLOT})")
+        plt.xlabel('Test F1 Macro Score')
         plt.ylabel('Model Combination')
-        plt.xlim(left=min(0.8, top_performers['Test F1 Weighted'].min() * 0.98))
+        plt.xlim(left=min(0.8, top_performers['Test F1 Macro'].min() * 0.98))
         plt.tight_layout()
 
         barchart_filename = "top_performers_f1_score_barchart.png"
@@ -224,7 +224,7 @@ def main():
         logging.info(f"  Saved performance bar chart to {barchart_filename}")
     else:
         logging.warning(
-            f"No models found with F1 score > {config.PERFORMANCE_THRESHOLD_FOR_PLOT} to generate a bar chart.")
+            f"No models found with F1 Macro score > {config.PERFORMANCE_THRESHOLD_FOR_PLOT} to generate a bar chart.")
 
     # --- Generate Confusion Matrices for Best and Statistically Similar Models ---
     logging.info("\n--- Generating Confusion Matrices ---")

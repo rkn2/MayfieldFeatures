@@ -101,8 +101,8 @@ def main():
         sys.exit(1)
 
     # 2. Identify High-Performing Models
-    logging.info(f"\nStep 2: Identifying models with Test F1 Weighted > {config.PERFORMANCE_THRESHOLD_FOR_PLOT}...")
-    high_performers = performance_df[performance_df['Test F1 Weighted'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT]
+    logging.info(f"\nStep 2: Identifying models with Test F1 Macro > {config.PERFORMANCE_THRESHOLD_FOR_PLOT}...")
+    high_performers = performance_df[performance_df['Test F1 Macro'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT]
     if high_performers.empty:
         logging.warning("No high-performing models found to analyze. Exiting.")
         return
@@ -126,7 +126,7 @@ def main():
                                                                 config.CLUSTERING_LINKAGE_METHOD)
         X_test_fs = X_test.reindex(columns=selected_features, fill_value=0)
 
-        scorer = make_scorer(f1_score, average='weighted', zero_division=0)
+        scorer = make_scorer(f1_score, average='macro', zero_division=0)
 
         perm_result = permutation_importance(
             estimator, X_test_fs, y_test_ravel, scoring=scorer,
@@ -168,7 +168,7 @@ def main():
                 data=significant_df, palette=config.VISUALIZATION['main_palette'], order=max_importance_order)
 
     plt.title(f'Statistically Significant Features (p < {config.P_VALUE_THRESHOLD})', fontsize=16)
-    plt.xlabel(f"Mean Drop in Test F1 Weighted Score", fontsize=12)
+    plt.xlabel(f"Mean Drop in Test F1 Macro Score", fontsize=12)
     plt.ylabel("Feature", fontsize=12)
     plt.legend(title='Model (Threshold)')
     plt.tight_layout()

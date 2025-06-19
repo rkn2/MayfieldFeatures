@@ -106,10 +106,31 @@ def main():
     X_test_processed = pd.DataFrame(preprocessor.transform(X_test), columns=preprocessor.get_feature_names_out(),
                                     index=X_test.index)
 
-    # 7. Recursive Feature Elimination with Cross-Validation (RFECV)
+    # Step 7: Balance the Training Data (This now happens BEFORE feature selection)
+    X_train_for_selection = X_train_processed
+    y_train_for_selection = y_train
+
+    if config.BALANCING_METHOD and sampler_class:
+        logging.info(f"\nStep 7: Applying balancing method '{config.BALANCING_METHOD}' to the training data...")
+        sampler = sampler_class(random_state=config.RANDOM_STATE)
+        X_train_resampled, y_train_resampled = sampler.fit_resample(X_train_processed, y_train)
+
+        # The data to be used for the next step (feature selection) is now the balanced set
+        X_train_for_selection = pd.DataFrame(X_train_resampled, columns=X_train_processed.columns)
+        y_train_for_selection = y_train_resampled
+        logging.info(f"  Shape of training data after balancing: {X_train_for_selection.shape}")
+    else:
+        logging.info("\nStep 7: Skipping data balancing as per config settings.")
+
+    # Step 8: Perform Feature Selection on the (now balanced) training data
+    # Initialize final datasets. They will be overwritten if RFECV is performed.
+    X_train_final = X_train_for_selection
+    y_train_final = y_train_for_selection
+    X_test_final = X_test_processed # Start with the original processed test set
+
     if config.PERFORM_RFECV:
-        logging.info(f"\nStep 7: Performing RFECV to find the optimal number of features...")
-        logging.info(f"  - CV Folds: {config.RFECV_CV_FOLDS}, Scoring: {config.RFECV_SCORING_METRIC}")
+        logging.info(f"\nStep 8: Performing RFECV on the balanced data to find the optimal number of features...")
+        logging.info(f"  - CV Folds: {config.RFECV_CV_FOLDS}, Scoring Metric: '{config.RFECV_SCORING_METRIC}'")
 
         estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
         cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
@@ -123,13 +144,13 @@ def main():
             n_jobs=-1
         )
 
-        logging.info("  Fitting RFECV selector... This may take some time.")
-        rfecv_selector.fit(X_train_processed, y_train)
+        logging.info("  Fitting RFECV selector on balanced data... This may take some time.")
+        # --- CRITICAL CHANGE: Fit on the balanced data ---
+        rfecv_selector.fit(X_train_for_selection, y_train_for_selection)
         logging.info("  RFECV fitting complete.")
 
-        # Determine the number of features to select
         optimal_feature_count = rfecv_selector.n_features_
-        logging.info(f"  RFECV raw optimal number of features: {optimal_feature_count}")
+        logging.info(f"  RFECV identified {optimal_feature_count} as the optimal number of features.")
 
         # --- NEW: Apply the "One Standard Error" Rule if enabled ---
         if config.RFECV_USE_1SE_RULE:
@@ -172,53 +193,48 @@ def main():
         plt.close()
         logging.info(f"  Plot saved to: {output_plot_path}")
 
-        # --- Final Feature Selection using RFE with the chosen number ---
-        logging.info(f"  Selecting final {optimal_feature_count} features using RFE...")
+        # --- FINAL FEATURE SELECTION & APPLICATION ---
+        logging.info(f"  Applying final selection of {optimal_feature_count} features...")
         final_selector = RFE(estimator=estimator, n_features_to_select=optimal_feature_count)
-        final_selector.fit(X_train_processed, y_train)
+        final_selector.fit(X_train_for_selection, y_train_for_selection)
 
         selected_features_mask = final_selector.get_support()
-        selected_features = X_train_processed.columns[selected_features_mask].tolist()
+        selected_features = X_train_for_selection.columns[selected_features_mask].tolist()
 
-        # --- NEW: Force inclusion of the random feature for sanity check ---
-        random_feature_name = 'num__random_feature'  # The name after preprocessing
-        if random_feature_name in X_train_processed.columns and random_feature_name not in selected_features:
+        random_feature_name = 'num__random_feature'
+        if random_feature_name in X_train_for_selection.columns and random_feature_name not in selected_features:
             logging.info(f"  Forcing inclusion of '{random_feature_name}' for model sanity check.")
             selected_features.append(random_feature_name)
 
-        X_train_processed = X_train_processed[selected_features]
-        X_test_processed = X_test_processed[selected_features]
-        logging.info(f"  Final shape of X_train after selection: {X_train_processed.shape}")
-    else:
-        logging.info("\nStep 7: Skipping RFECV as per config setting.")
-    # 8. Balance Training Data
-    X_train_final, y_train_final = X_train_processed, y_train
-    if config.BALANCING_METHOD and sampler_class:
-        logging.info(f"\nStep 8: Applying balancing method '{config.BALANCING_METHOD}'...")
-        sampler = sampler_class(random_state=config.RANDOM_STATE)
-        X_train_resampled, y_train_resampled = sampler.fit_resample(X_train_processed, y_train)
-        X_train_final = pd.DataFrame(X_train_resampled, columns=X_train_processed.columns)
-        y_train_final = y_train_resampled
+        # Overwrite the final datasets with the feature-selected versions
+        X_train_final = X_train_for_selection[selected_features]
+        X_test_final = X_test_processed[selected_features]  # Apply same features to original test set
 
-    # 9. Save Data
+        logging.info(f"  Final shape of X_train after selection: {X_train_final.shape}")
+        logging.info(f"  Final shape of X_test after selection: {X_test_final.shape}")
+    else:
+        logging.info("\nStep 8: Skipping RFECV as per config settings.")
+
+        # Step 9: Save the final data artifacts
     logging.info("\nStep 9: Saving final processed data...")
     os.makedirs(config.DATA_DIR, exist_ok=True)
     joblib.dump(X_train_final, config.TRAIN_X_PATH)
     joblib.dump(y_train_final, config.TRAIN_Y_PATH)
-    joblib.dump(X_test_processed, config.TEST_X_PATH)
-    joblib.dump(y_test, config.Y_TEST_PATH)
+    joblib.dump(X_test_final, config.TEST_X_PATH)
+    joblib.dump(y_test, config.Y_TEST_PATH)  # y_test is never altered
     joblib.dump(preprocessor, config.PREPROCESSOR_PATH)
+    logging.info("  All processed data artifacts have been saved successfully.")
 
-    # 10. Log and Visualize Distributions
+    # Step 10: Log and Visualize Final Distributions
     logging.info("\nStep 10: Logging and visualizing data distributions...")
 
-    # Log the distributions
     logging.info(f"\nOriginal Data Distribution:\n{df[config.TARGET_COLUMN].value_counts().to_string()}")
     logging.info(f"\nTraining Data Distribution (Before Balancing):\n{y_train.value_counts().to_string()}")
-    logging.info(f"\nTraining Data Distribution (After {config.BALANCING_METHOD or 'No'} Balancing):\n{y_train_final.value_counts().to_string()}")
-    logging.info(f"\nTest Data Distribution:\n{y_test.value_counts().to_string()}")
+    logging.info(
+        f"\nFinal Training Data Distribution (After Balancing & Selection):\n{pd.Series(y_train_final).value_counts().to_string()}")
+    logging.info(f"\nFinal Test Data Distribution:\n{y_test.value_counts().to_string()}")
 
-
+    # Generate visualization
     plt.style.use(config.VISUALIZATION['plot_style'])
     fig, axes = plt.subplots(2, 2, figsize=(18, 14))
     palette = config.VISUALIZATION['main_palette']
@@ -237,8 +253,7 @@ def main():
 
     plt.tight_layout()
     plt.savefig('data_distribution_summary.png')
-    logging.info("Saved data distribution summary plot.")
-
+    logging.info("  Saved data distribution summary plot to 'data_distribution_summary.png'.")
 
     logging.info(f"--- Finished Script: 2_dataPreprocessing.py ---")
 
