@@ -10,6 +10,7 @@ import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
+from corr_shap.CorrExplainer import CorrExplainer
 import config
 
 from scipy.stats import pearsonr
@@ -293,16 +294,36 @@ def main():
         test_sample = X_test[selected_features].sample(n=min(1000, len(X_test)), random_state=config.RANDOM_STATE)
         background_data = X_train[selected_features].sample(n=min(200, len(X_train)), random_state=config.RANDOM_STATE)
 
-        logging.info("  Calculating SHAP values...")
-        explainer_func = model_instance.predict
-        if hasattr(model_instance, 'predict_proba'):
-            explainer_func = model_instance.predict_proba
+        logging.info("  Calculating SHAP values using CorrExplainer...")
+        # explainer_func = model_instance.predict
+        # if hasattr(model_instance, 'predict_proba'):
+        #     explainer_func = model_instance.predict_proba
+        #
+        # # Use CorrExplainer for all models. It can handle various model types.
+        # # The background data is passed directly during initialization.
+        # explainer = CorrExplainer(explainer_func, background_data)
+        #
+        # # The call to get shap_values remains the same.
+        # shap_values = explainer(test_sample)
+        # This list of tree models is already in your script
+        tree_model_names = ["RandomForestClassifier", "HistGradientBoostingClassifier", "XGBClassifier",
+                            "LGBMClassifier",
+                            "DecisionTreeClassifier"]
 
         if model_instance.__class__.__name__ in tree_model_names:
+            # For tree-based models, use the optimized TreeExplainer.
+            # It's fast and avoids the attribute error.
+            logging.info(f"  Using shap.TreeExplainer for {model_instance.__class__.__name__}.")
             explainer = shap.TreeExplainer(model_instance, background_data)
             shap_values = explainer(test_sample, check_additivity=False)
         else:
-            explainer = shap.Explainer(explainer_func, background_data)
+            # For non-tree models, use the more advanced CorrExplainer.
+            logging.info(f"  Using CorrExplainer for {model_instance.__class__.__name__}.")
+            explainer_func = model_instance.predict
+            if hasattr(model_instance, 'predict_proba'):
+                explainer_func = model_instance.predict_proba
+
+            explainer = CorrExplainer(explainer_func, background_data)
             shap_values = explainer(test_sample)
 
         all_shap_values[combo_key] = shap_values

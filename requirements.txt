@@ -10,3 +10,4 @@ mord
 fpdf2
 Pillow
 mlxtend
+corr-shap
