@@ -16,6 +16,7 @@ RANDOM_STATE = 42
 DATA_DIR = 'processed_ml_data'
 BASE_RESULTS_DIR = 'clustering_performance_results'
 SHAP_RESULTS_DIR = 'shap_results_top_performers'
+SHAP_DEPENDENCE_PLOTS_DIR = 'shap_dependence_plots'
 REPORT_DIR = 'reports'
 INPUT_CSV_PATH = 'QuadState_Tornado_DataInput_Categorical.csv'
 CLEANED_CSV_PATH = 'cleaned_data_categorical_latlong.csv'
@@ -28,6 +29,8 @@ TRAIN_Y_PATH = os.path.join(DATA_DIR, 'y_train.pkl')
 TEST_X_PATH = os.path.join(DATA_DIR, 'X_test_processed.pkl')
 Y_TEST_PATH = os.path.join(DATA_DIR, 'y_test.pkl')
 PREPROCESSOR_PATH = os.path.join(DATA_DIR, 'preprocessor.pkl')
+SHAP_VALUES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_shap_values.pkl')
+SHAP_TEST_SAMPLES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_test_samples.pkl')
 
 # --- DATA CLEANING ---
 TARGET_COLUMN_FOR_NAN_DROP = 'degree_of_damage_u'
@@ -116,3 +119,13 @@ VISUALIZATION = {
     'diverging_palette': 'coolwarm', # Good for heatmaps or SHAP plots where values diverge from a center
     'plot_style': 'seaborn-v0_8-white' # A clean, professional plot style
 }
+
+# --- SHAP INTERROGATION ---
+# List of features you want to generate dependence plots for.
+# Use the actual column names from the processed data.
+FEATURES_FOR_DEPENDENCE_PLOTS = [
+    'num__building_area_m2',
+    'num__year_built_u',
+    'num__buidling_height_m',
+    'num__wall_length_front'
+]

@@ -332,6 +332,12 @@ def main():
     if all_shap_values:
         plot_visualizations(all_shap_values, all_test_samples, config.SHAP_RESULTS_DIR)
 
+        # *** NEW: Save the SHAP value objects and test samples ***
+        logging.info("\n--- Saving SHAP objects for later interrogation ---")
+        joblib.dump(all_shap_values, config.SHAP_VALUES_PATH)
+        joblib.dump(all_test_samples, config.SHAP_TEST_SAMPLES_PATH)
+        logging.info(f"  SHAP values and test samples saved successfully.")
+
     logging.info(f"--- Finished Script: 7_shap.py ---")
 
 
