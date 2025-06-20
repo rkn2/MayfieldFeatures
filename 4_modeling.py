@@ -155,7 +155,7 @@ def main():
     models_to_plot_cm = []
     if not all_results_df.empty:
         # Identify the top performing model
-        top_model_row = all_results_df.loc[all_results_df['Test F1 Macro'].idxmax()]
+        top_model_row = all_results_df.loc[all_results_df[config.PRIMARY_METRIC_COLUMN].idxmax()]
         top_model_key = f"{top_model_row['Model']}_{top_model_row['Feature Set Name']}"
         models_to_plot_cm.append(top_model_key)  # Add the best model to the plot list
         top_model_predictions = all_predictions[top_model_key]
@@ -202,30 +202,43 @@ def main():
     logging.info("\n--- Generating Performance Bar Chart ---")
     plt.style.use(config.VISUALIZATION['plot_style'])
 
-    top_performers = all_results_df[all_results_df['Test F1 Macro'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT].copy()
+    top_performers = all_results_df[
+        all_results_df[config.PRIMARY_METRIC_COLUMN] > config.PERFORMANCE_THRESHOLD_FOR_PLOT].copy()
 
     if not top_performers.empty:
         top_performers['Model (Feature Set)'] = top_performers['Model'] + ' (' + top_performers[
             'Feature Set Name'] + ')'
-        top_performers = top_performers.sort_values(by='Test F1 Macro', ascending=False)
+        # Use the config variable for sorting
+        top_performers = top_performers.sort_values(by=config.PRIMARY_METRIC_COLUMN, ascending=False)
 
         plt.figure(figsize=(12, 8))
-        sns.barplot(x='Test F1 Macro', y='Model (Feature Set)', data=top_performers,
+        # Use the config variable for the x-axis data
+        sns.barplot(x=config.PRIMARY_METRIC_COLUMN, y='Model (Feature Set)', data=top_performers,
                     palette=config.VISUALIZATION['main_palette'])
-        plt.title(f"Top Performing Model Combinations (Test F1 Macro > {config.PERFORMANCE_THRESHOLD_FOR_PLOT})")
-        plt.xlabel('Test F1 Macro Score')
+
+        # Use the config variable in the title
+        plt.title(
+            f"Top Performing Model Combinations ({config.PRIMARY_METRIC_COLUMN} > {config.PERFORMANCE_THRESHOLD_FOR_PLOT})")
+
+        # Use the config variable for the xlabel
+        plt.xlabel(f"{config.PRIMARY_METRIC_COLUMN} Score")
         plt.ylabel('Model Combination')
-        plt.xlim(left=min(0.8, top_performers['Test F1 Macro'].min() * 0.98))
+
+        # Use the config variable to set the x-axis limit
+        plt.xlim(left=min(0.8, top_performers[config.PRIMARY_METRIC_COLUMN].min() * 0.98))
         plt.tight_layout()
 
-        barchart_filename = "top_performers_f1_score_barchart.png"
+        # Create a dynamic filename based on the primary metric
+        metric_filename_part = config.PRIMARY_METRIC_COLUMN.replace(' ', '_').lower()
+        barchart_filename = f"top_performers_{metric_filename_part}_barchart.png"
+
         plt.savefig(os.path.join(config.BASE_RESULTS_DIR, barchart_filename))
         plt.close()
         logging.info(f"  Saved performance bar chart to {barchart_filename}")
     else:
+        # Update the logging warning to be dynamic
         logging.warning(
-            f"No models found with F1 Macro score > {config.PERFORMANCE_THRESHOLD_FOR_PLOT} to generate a bar chart.")
-
+            f"No models found with {config.PRIMARY_METRIC_COLUMN} score > {config.PERFORMANCE_THRESHOLD_FOR_PLOT} to generate a bar chart.")
     # --- Generate Confusion Matrices for Best and Statistically Similar Models ---
     logging.info("\n--- Generating Confusion Matrices ---")
 

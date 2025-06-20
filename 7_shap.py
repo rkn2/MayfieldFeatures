@@ -266,7 +266,7 @@ def main():
     X_test = load_data(config.TEST_X_PATH, "test features")
     performance_df = pd.read_csv(config.DETAILED_RESULTS_CSV)
 
-    high_performers = performance_df[performance_df['Test F1 Weighted'] > config.PERFORMANCE_THRESHOLD_FOR_PLOT]
+    high_performers = performance_df[performance_df[config.PRIMARY_METRIC_COLUMN] > config.PERFORMANCE_THRESHOLD_FOR_PLOT]
     if high_performers.empty: return
 
     all_shap_values, all_test_samples = {}, {}
