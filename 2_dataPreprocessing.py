@@ -77,14 +77,14 @@ def main():
 
     # 2. Separate Target and Features
     logging.info(f"\nStep 2: Separating target ('{config.TARGET_COLUMN}') and features...")
-    # << UPDATED >>: Handle regression target as float
     if config.PROBLEM_TYPE == 'classification':
         y = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce').fillna(0).astype(int)
-    else: # Regression
-        y = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce')
-        # Drop rows where the regression target is still NaN after coercion
-        y.dropna(inplace=True)
-        X = df.loc[y.index].drop(columns=[config.TARGET_COLUMN])
+        X = df.drop(columns=[config.TARGET_COLUMN])
+    else:  # Regression
+        df[config.TARGET_COLUMN] = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce')
+        df.dropna(subset=[config.TARGET_COLUMN], inplace=True)
+        y = df[config.TARGET_COLUMN]
+        X = df.drop(columns=[config.TARGET_COLUMN])
         logging.info(f"  Shape after dropping NaN regression targets: {X.shape}")
     X = df.drop(columns=[config.TARGET_COLUMN])
 
@@ -149,10 +149,11 @@ def main():
         logging.info(f"\nStep 8: Performing RFECV on the balanced data to find the optimal number of features...")
         if config.PROBLEM_TYPE == 'classification':
             estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
-            cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
-        else: # Regression
+            cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS, shuffle=True,
+                                          random_state=config.RANDOM_STATE)
+        else:  # Regression
             estimator = RandomForestRegressor(random_state=config.RANDOM_STATE, n_jobs=-1)
-            cv_strategy = KFold(n_splits=config.RFECV_CV_FOLDS) # StratifiedKFold not for regression
+            cv_strategy = KFold(n_splits=config.RFECV_CV_FOLDS, shuffle=True, random_state=config.RANDOM_STATE)
 
         rfecv_selector = RFECV(
             estimator=estimator,

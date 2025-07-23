@@ -11,7 +11,7 @@ import mord
 
 # --- GENERAL ---
 RANDOM_STATE = 42
-PROBLEM_TYPE = 'classification'  # << CHANGE THIS to 'classification' to run the original analysis
+PROBLEM_TYPE = 'regression'  # << CHANGE THIS to 'classification' to run the original analysis
 
 # --- PATHS ---
 DATA_DIR = 'processed_ml_data'
@@ -34,7 +34,7 @@ SHAP_VALUES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_shap_values.pkl')
 SHAP_TEST_SAMPLES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_test_samples.pkl')
 
 # --- DATA CLEANING ---
-TARGET_COLUMN_FOR_NAN_DROP = 'degree_of_damage_u' #'roof_structure_damage_u_per' #'degree_of_damage_u'
+TARGET_COLUMN_FOR_NAN_DROP = 'roof_structure_damage_u_per' #'degree_of_damage_u'
 LOW_VARIATION_THRESHOLD = 1
 KEYWORDS_TO_DROP = ['photos', 'details', 'prop_', '_unc']
 SPECIFIC_COLUMNS_TO_DROP = [
@@ -70,7 +70,7 @@ CLASSIFICATION_SETTINGS = {
 PERFORM_RFECV = True              # Set to True to run RFECV, False to skip
 RFECV_MIN_FEATURES = 15           # The minimum number of features to consider
 RFECV_CV_FOLDS = 5                # Number of folds for cross-validation
-RFECV_SCORING_METRIC = 'f1_macro' # The metric to optimize
+RFECV_SCORING_METRIC = 'f1_macro' if PROBLEM_TYPE == 'classification' else 'r2'
 RFECV_STEP = 1                    # How many features to remove at each step
 RFECV_USE_1SE_RULE = True # SET TO True TO FIND THE SIMPLEST MODEL WITHIN 1 S.E. OF THE BEST
 
