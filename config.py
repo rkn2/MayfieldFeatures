@@ -56,6 +56,11 @@ TARGET_COLUMN = TARGET_COLUMN_FOR_NAN_DROP
 TEST_SIZE = 0.2
 BALANCING_METHOD = 'SMOTE'
 
+# Set to True to apply a transformation (e.g., log) to the regression target
+APPLY_TARGET_TRANSFORMATION = True
+# The method to use. 'log1p' is recommended as it handles zero values.
+TARGET_TRANSFORMATION_METHOD = 'log1p'
+
 # --- CLASSIFICATION SPECIFIC SETTINGS ---
 CLASSIFICATION_SETTINGS = {
     'REDUCE_CLASSES_STRATEGY': 'B',

@@ -141,6 +141,19 @@ def main():
                 }
 
                 y_pred_test = best_estimator.predict(X_test_fs)
+
+                if config.PROBLEM_TYPE == 'regression' and config.APPLY_TARGET_TRANSFORMATION:
+                    if config.TARGET_TRANSFORMATION_METHOD == 'log1p':
+                        # Use np.expm1 to reverse the log1p transformation
+                        y_pred_test_orig_scale = np.expm1(y_pred_test)
+                        y_test_orig_scale = np.expm1(y_test_ravel)
+                    else: # If other transformations were added, their inverses would go here
+                        y_pred_test_orig_scale = y_pred_test
+                        y_test_orig_scale = y_test_ravel
+                else:
+                    y_pred_test_orig_scale = y_pred_test
+                    y_test_orig_scale = y_test_ravel
+
                 all_predictions[combo_key] = y_pred_test
 
                 # Calculate and store metrics based on problem type
@@ -159,11 +172,11 @@ def main():
                 else:  # Regression
                     for metric_name in config.METRICS_TO_EVALUATE:
                         if metric_name == 'r2':
-                            score = r2_score(y_test_ravel, y_pred_test)
+                            score = r2_score(y_test_orig_scale, y_pred_test_orig_scale)
                         elif metric_name == 'neg_mean_squared_error':
-                            score = mean_squared_error(y_test_ravel, y_pred_test)
+                            score = mean_squared_error(y_test_orig_scale, y_pred_test_orig_scale)
                         elif metric_name == 'neg_mean_absolute_error':
-                            score = mean_absolute_error(y_test_ravel, y_pred_test)
+                            score = mean_absolute_error(y_test_orig_scale, y_pred_test_orig_scale)
                         result_row[f"Test {metric_name.replace('_', ' ').title()}"] = score
 
                 all_results.append(result_row)
@@ -246,7 +259,7 @@ def main():
             logging.info(f"  Mean Absolute Error: {mean_absolute_error(y_test_ravel, y_pred):.4f}")
 
             # << NEW >> Call the plotting function for each top model
-            plot_regression_results(y_test_ravel, y_pred, combo_key, config.BASE_RESULTS_DIR)
+            plot_regression_results(y_test_orig_scale, y_pred_test_orig_scale, combo_key, config.BASE_RESULTS_DIR)
 
     logging.info("\n--- Script Finished ---")
 

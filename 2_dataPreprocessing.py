@@ -85,6 +85,16 @@ def main():
         df.dropna(subset=[config.TARGET_COLUMN], inplace=True)
         y = df[config.TARGET_COLUMN]
         X = df.drop(columns=[config.TARGET_COLUMN])
+
+        # Conditionally apply the target transformation based on the config file
+        if config.PROBLEM_TYPE == 'regression' and config.APPLY_TARGET_TRANSFORMATION:
+            if config.TARGET_TRANSFORMATION_METHOD == 'log1p':
+                y = np.log1p(y)
+                logging.info("  Successfully applied log1p transformation to the target variable.")
+            # You could add other transformations like 'sqrt' here in the future
+            # elif config.TARGET_TRANSFORMATION_METHOD == 'sqrt':
+            #     y = np.sqrt(y)
+
         logging.info(f"  Shape after dropping NaN regression targets: {X.shape}")
     X = df.drop(columns=[config.TARGET_COLUMN])
 
