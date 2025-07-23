@@ -27,7 +27,7 @@ def main():
         '4_modeling.py',
         '6_deltaAccuracy.py',
         '7_shap.py',
-        '8_generate_report.py'
+        #'8_generate_report.py'
     ]
 
     for script in scripts_to_run:

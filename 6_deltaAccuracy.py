@@ -18,6 +18,8 @@ from scipy.spatial.distance import squareform
 
 # --- Scikit-learn ---
 from sklearn.metrics import make_scorer, f1_score
+from sklearn.metrics import make_scorer, f1_score, r2_score # << ADD r2_score
+
 from sklearn.inspection import permutation_importance
 
 
@@ -132,7 +134,10 @@ def main():
                                                                 config.CLUSTERING_LINKAGE_METHOD)
         X_test_fs = X_test.reindex(columns=selected_features, fill_value=0)
 
-        scorer = make_scorer(f1_score, average=config.PERMUTATION_SCORING_AVERAGE, zero_division=0)
+        if config.PROBLEM_TYPE == 'classification':
+             scorer = make_scorer(f1_score, average=config.PERMUTATION_SCORING_AVERAGE, zero_division=0)
+        else: # Regression
+             scorer = make_scorer(r2_score)
 
         perm_result = permutation_importance(
             estimator, X_test_fs, y_test_ravel, scoring=scorer,

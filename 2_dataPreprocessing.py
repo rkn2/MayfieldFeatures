@@ -14,7 +14,10 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import RFE, RFECV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
+
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor # << ADD Regressor
+
 # Set the random seed for reproducibility
 np.random.seed(config.RANDOM_STATE)
 
@@ -74,22 +77,36 @@ def main():
 
     # 2. Separate Target and Features
     logging.info(f"\nStep 2: Separating target ('{config.TARGET_COLUMN}') and features...")
-    y = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce').fillna(0).astype(int)
+    # << UPDATED >>: Handle regression target as float
+    if config.PROBLEM_TYPE == 'classification':
+        y = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce').fillna(0).astype(int)
+    else: # Regression
+        y = pd.to_numeric(df[config.TARGET_COLUMN], errors='coerce')
+        # Drop rows where the regression target is still NaN after coercion
+        y.dropna(inplace=True)
+        X = df.loc[y.index].drop(columns=[config.TARGET_COLUMN])
+        logging.info(f"  Shape after dropping NaN regression targets: {X.shape}")
     X = df.drop(columns=[config.TARGET_COLUMN])
 
-    # 3. Apply Class Reduction
+    # 3. Apply Class Reduction (Conditional)
     logging.info("\nStep 3: Applying class reduction...")
-    if config.REDUCE_CLASSES_STRATEGY in config.CLASS_MAPPINGS:
-        y = y.map(config.CLASS_MAPPINGS[config.REDUCE_CLASSES_STRATEGY])
-        logging.info(f"  Applied class reduction strategy '{config.REDUCE_CLASSES_STRATEGY}'.")
+    if config.PROBLEM_TYPE == 'classification':
+        strategy = config.CLASSIFICATION_SETTINGS['REDUCE_CLASSES_STRATEGY']
+        if strategy in config.CLASSIFICATION_SETTINGS['CLASS_MAPPINGS']:
+            y = y.map(config.CLASSIFICATION_SETTINGS['CLASS_MAPPINGS'][strategy])
+            logging.info(f"  Applied class reduction strategy '{strategy}'.")
+    else:
+        logging.info("  Skipping class reduction for regression task.")
 
     # 4. Filter Feature Set
     X = filter_features(X, config.KEYWORDS_TO_REMOVE_FROM_X)
 
-    # 5. Split Data
+    # 5. Split Data (Conditional Stratification)
     logging.info("\nStep 5: Splitting data into training and testing sets...")
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=config.TEST_SIZE,
-                                                        random_state=config.RANDOM_STATE, stratify=y)
+    split_args = {'test_size': config.TEST_SIZE, 'random_state': config.RANDOM_STATE}
+    if config.PROBLEM_TYPE == 'classification':
+        split_args['stratify'] = y
+    X_train, X_test, y_train, y_test = train_test_split(X, y, **split_args)
 
     # 6. Preprocess Features
     numeric_features = X_train.select_dtypes(include=np.number).columns.tolist()
@@ -110,7 +127,7 @@ def main():
     X_train_for_selection = X_train_processed
     y_train_for_selection = y_train
 
-    if config.BALANCING_METHOD and sampler_class:
+    if config.PROBLEM_TYPE == 'classification' and config.BALANCING_METHOD and sampler_class:
         logging.info(f"\nStep 7: Applying balancing method '{config.BALANCING_METHOD}' to the training data...")
         sampler = sampler_class(random_state=config.RANDOM_STATE)
         X_train_resampled, y_train_resampled = sampler.fit_resample(X_train_processed, y_train)
@@ -130,10 +147,12 @@ def main():
 
     if config.PERFORM_RFECV:
         logging.info(f"\nStep 8: Performing RFECV on the balanced data to find the optimal number of features...")
-        logging.info(f"  - CV Folds: {config.RFECV_CV_FOLDS}, Scoring Metric: '{config.RFECV_SCORING_METRIC}'")
-
-        estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
-        cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
+        if config.PROBLEM_TYPE == 'classification':
+            estimator = RandomForestClassifier(random_state=config.RANDOM_STATE, n_jobs=-1)
+            cv_strategy = StratifiedKFold(n_splits=config.RFECV_CV_FOLDS)
+        else: # Regression
+            estimator = RandomForestRegressor(random_state=config.RANDOM_STATE, n_jobs=-1)
+            cv_strategy = KFold(n_splits=config.RFECV_CV_FOLDS) # StratifiedKFold not for regression
 
         rfecv_selector = RFECV(
             estimator=estimator,

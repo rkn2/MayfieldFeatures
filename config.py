@@ -1,16 +1,17 @@
 # config.py
 
 import os
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, HistGradientBoostingClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import xgboost as xgb
 import lightgbm as lgb
 import mord
 
 # --- GENERAL ---
 RANDOM_STATE = 42
+PROBLEM_TYPE = 'classification'  # << CHANGE THIS to 'classification' to run the original analysis
 
 # --- PATHS ---
 DATA_DIR = 'processed_ml_data'
@@ -33,7 +34,7 @@ SHAP_VALUES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_shap_values.pkl')
 SHAP_TEST_SAMPLES_PATH = os.path.join(SHAP_RESULTS_DIR, 'all_test_samples.pkl')
 
 # --- DATA CLEANING ---
-TARGET_COLUMN_FOR_NAN_DROP = 'degree_of_damage_u'
+TARGET_COLUMN_FOR_NAN_DROP = 'degree_of_damage_u' #'roof_structure_damage_u_per' #'degree_of_damage_u'
 LOW_VARIATION_THRESHOLD = 1
 KEYWORDS_TO_DROP = ['photos', 'details', 'prop_', '_unc']
 SPECIFIC_COLUMNS_TO_DROP = [
@@ -51,14 +52,19 @@ COLUMNS_FOR_VALUE_REPLACEMENT = {
 }
 
 # --- PREPROCESSING ---
-TARGET_COLUMN = 'degree_of_damage_u'
+TARGET_COLUMN = TARGET_COLUMN_FOR_NAN_DROP
 TEST_SIZE = 0.2
-REDUCE_CLASSES_STRATEGY = 'B'
-CLASS_MAPPINGS = {
-    'A': {0: 0, 1: 1, 2: 1, 3: 1, 4: 2, 5: 3},
-    'B': {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, 5: 2}
-}
 BALANCING_METHOD = 'SMOTE'
+
+# --- CLASSIFICATION SPECIFIC SETTINGS ---
+CLASSIFICATION_SETTINGS = {
+    'REDUCE_CLASSES_STRATEGY': 'B',
+    'CLASS_MAPPINGS': {
+        'A': {0: 0, 1: 1, 2: 1, 3: 1, 4: 2, 5: 3},
+        'B': {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, 5: 2}
+    }
+}
+
 
 # --- New settings for Recursive Feature Elimination with Cross-Validation ---
 PERFORM_RFECV = True              # Set to True to run RFECV, False to skip
@@ -82,35 +88,67 @@ PERFORMANCE_THRESHOLD_FOR_PLOT = 0.65
 PERMUTATION_SCORING_AVERAGE = 'macro' # ADD this line
 N_PERMUTATION_REPEATS = 100  # Added this line
 P_VALUE_THRESHOLD = 0.05    # Added this line
-METRICS_TO_EVALUATE = {
-    'accuracy': 'accuracy', 'f1_weighted': 'f1_weighted', 'f1_macro': 'f1_macro',
-    'precision_weighted': 'precision_weighted', 'recall_weighted': 'recall_weighted',
+
+METRICS = {
+    'classification': {
+        'accuracy': 'accuracy', 'f1_weighted': 'f1_weighted', 'f1_macro': 'f1_macro',
+        'precision_weighted': 'precision_weighted', 'recall_weighted': 'recall_weighted'
+    },
+    'regression': {
+        'neg_mean_squared_error': 'neg_mean_squared_error',
+        'neg_mean_absolute_error': 'neg_mean_absolute_error',
+        'r2': 'r2'
+    }
 }
 
-MODELS_TO_BENCHMARK = {
-    "Logistic Regression": LogisticRegression(random_state=RANDOM_STATE, max_iter=2000, solver='liblinear'), # <-- CHANGED
-    "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE), # <-- CHANGED
-    "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1), # <-- CHANGED
-    "Gradient Boosting": GradientBoostingClassifier(random_state=RANDOM_STATE),
-    "Hist Gradient Boosting": HistGradientBoostingClassifier(random_state=RANDOM_STATE), # <-- CHANGED
-    "XGBoost": xgb.XGBClassifier(random_state=RANDOM_STATE, eval_metric='mlogloss'),
-    "LightGBM": lgb.LGBMClassifier(random_state=RANDOM_STATE, verbosity=-1), # <-- CHANGED
-    "Ordinal Logistic (AT)": mord.LogisticAT(),
-    "Ordinal Ridge": mord.OrdinalRidge(),
-    "Ordinal LAD": mord.LAD()
+METRICS_TO_EVALUATE = METRICS[PROBLEM_TYPE]
+
+GRIDSEARCH_SCORING_METRIC = 'f1_macro' if PROBLEM_TYPE == 'classification' else 'r2'
+PRIMARY_METRIC_COLUMN = 'Test F1 Macro' if PROBLEM_TYPE == 'classification' else 'Test R2'
+PERMUTATION_SCORING_METRIC = 'f1_macro' if PROBLEM_TYPE == 'classification' else 'r2'
+
+MODELS = {
+    'classification': {
+        "Logistic Regression": LogisticRegression(random_state=RANDOM_STATE, max_iter=2000, solver='liblinear'),
+        "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
+        "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+        "Gradient Boosting": GradientBoostingClassifier(random_state=RANDOM_STATE),
+        "Hist Gradient Boosting": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
+        "XGBoost": xgb.XGBClassifier(random_state=RANDOM_STATE, eval_metric='mlogloss'),
+        "LightGBM": lgb.LGBMClassifier(random_state=RANDOM_STATE, verbosity=-1),
+        "Ordinal Logistic (AT)": mord.LogisticAT(),
+        "Ordinal Ridge": mord.OrdinalRidge(),
+        "Ordinal LAD": mord.LAD()
+    },
+    'regression': {
+        "Linear Regression": LinearRegression(),
+        "Ridge": Ridge(random_state=RANDOM_STATE),
+        "Lasso": Lasso(random_state=RANDOM_STATE),
+        "Decision Tree Regressor": DecisionTreeRegressor(random_state=RANDOM_STATE),
+        "Random Forest Regressor": RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=-1),
+        "Gradient Boosting Regressor": GradientBoostingRegressor(random_state=RANDOM_STATE),
+        "Hist Gradient Boosting Regressor": HistGradientBoostingRegressor(random_state=RANDOM_STATE),
+        "XGBoost Regressor": xgb.XGBRegressor(random_state=RANDOM_STATE),
+        "LightGBM Regressor": lgb.LGBMRegressor(random_state=RANDOM_STATE, verbosity=-1)
+    }
 }
-PARAM_GRIDS = {
-    "Logistic Regression": {'penalty': ['l1', 'l2'], 'C': [0.1, 1.0, 10.0]},
-    "Decision Tree": {'criterion': ['gini', 'entropy'], 'max_depth': [4, 6, 8], 'min_samples_leaf': [10, 15]},
-    "Random Forest": {'n_estimators': [100, 150], 'max_depth': [6, 8], 'min_samples_leaf': [5, 10]},
-    "Gradient Boosting": {'n_estimators': [100], 'learning_rate': [0.05, 0.1], 'max_depth': [3, 4, 5]},
-    "Hist Gradient Boosting": {'learning_rate': [0.05, 0.1], 'max_leaf_nodes': [20, 31]},
-    "XGBoost": {'n_estimators': [100], 'learning_rate': [0.05, 0.1], 'max_depth': [3, 4, 5]},
-    "LightGBM": {'n_estimators': [100], 'learning_rate': [0.05, 0.1], 'num_leaves': [15, 25]},
-    "Ordinal Logistic (AT)": {'alpha': [0.1, 1.0, 10.0]},
-    "Ordinal Ridge": {'alpha': [0.1, 1.0, 10.0]},
-    "Ordinal LAD": {'C': [0.1, 1.0, 10.0]}
+MODELS_TO_BENCHMARK = MODELS[PROBLEM_TYPE]
+
+PARAM_GRIDS_ALL = {
+    'classification': {
+        "Logistic Regression": {'penalty': ['l1', 'l2'], 'C': [0.1, 1.0, 10.0]},
+        "Decision Tree": {'criterion': ['gini', 'entropy'], 'max_depth': [4, 6, 8], 'min_samples_leaf': [10, 15]},
+        # ... other classification grids
+    },
+    'regression': {
+        "Ridge": {'alpha': [0.1, 1.0, 10.0, 100.0]},
+        "Lasso": {'alpha': [0.01, 0.1, 1.0, 10.0]},
+        "Decision Tree Regressor": {'max_depth': [3, 5, 8], 'min_samples_leaf': [10, 20]},
+        "Random Forest Regressor": {'n_estimators': [100, 150], 'max_depth': [6, 8], 'min_samples_leaf': [5, 10]},
+        # ... other regression grids
+    }
 }
+PARAM_GRIDS = PARAM_GRIDS_ALL[PROBLEM_TYPE]
 
 # --- VISUALIZATION ---
 # Define a consistent color scheme for all plots
