@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+
+# Output
+# We usually keep outputs, but if they are large we might ignore them. 
+# For this project, the user seems to want them tracked as they are part of the paper artifacts.
+# tornado_vulnerability_outputs/
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
