@@ -90,11 +90,26 @@ if all(c in df.columns for c in required_coords):
         ), axis=1
     )
 
+# Clean unknowns (same as replicate_analysis.py)
+def clean_unknowns(val):
+    if isinstance(val, str):
+        s = val.strip().lower()
+        if s in ['un', 'unknown', 'n/a', 'na']:
+            return np.nan
+    return val
+
+# Apply to all columns (object type)
+for col in df.select_dtypes(include=['object']).columns:
+    df[col] = df[col].apply(clean_unknowns)
+
 # Define feature sets
 numeric_features = [
     'number_stories', 'year_built_u', 'building_area_m2', 'buidling_height_m', 
-    'first_floor_elevation_m', 'wall_length_side', 'wall_length_front', 
-    'wall_thickness', 'parapet_height_m', 'overhang_length_u'
+    'wall_length_side', 'wall_length_front', 
+    'wall_thickness', 'parapet_height_m', 'overhang_length_u',
+    # Added Fenestration Features
+    'wall_fenestration_per_n', 'wall_fenestration_per_s', 
+    'wall_fenestration_per_e', 'wall_fenestration_per_w'
 ]
 
 categorical_features = [

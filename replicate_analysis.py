@@ -54,6 +54,21 @@ def load_and_preprocess_data():
     common_cols = list(set(df_nash.columns) & set(df_qs.columns))
     df = pd.concat([df_nash, df_qs], axis=0, ignore_index=True)
     
+    # --- Data Cleaning: Standardize Unknowns ---
+    # User identified that Nashville uses "unknown"/"un" while QuadState uses blanks (NaN).
+    # We convert all explicit "unknown" strings to np.nan so they are treated identically.
+    # This prevents the model from seeing "unknown" and "nan" as two different categories.
+    def clean_unknowns(val):
+        if isinstance(val, str):
+            s = val.strip().lower()
+            if s in ['un', 'unknown', 'n/a', 'na']:
+                return np.nan
+        return val
+
+    # Apply to all columns (object type)
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = df[col].apply(clean_unknowns)
+    
     print(f"Combined shape: {df.shape}")
     return df
 
@@ -156,8 +171,11 @@ def get_feature_sets():
     # Define lists based on report
     numeric_features = [
         'number_stories', 'year_built_u', 'building_area_m2', 'buidling_height_m', 
-        'first_floor_elevation_m', 'wall_length_side', 'wall_length_front', 
-        'wall_thickness', 'parapet_height_m', 'overhang_length_u', 'random_noise'
+        'wall_length_side', 'wall_length_front', 
+        'wall_thickness', 'parapet_height_m', 'overhang_length_u', 'random_noise',
+        # Added Fenestration Features (Percentage of Openings)
+        'wall_fenestration_per_n', 'wall_fenestration_per_s', 
+        'wall_fenestration_per_e', 'wall_fenestration_per_w'
     ]
     
     categorical_features = [
