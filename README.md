@@ -1,10 +1,22 @@
-# Tornado Vulnerability Feature Importance Analysis
+# Feature Importance Analysis for Tornado Vulnerability
 
-This repository contains the code and analysis for examining the relationship between historic building features and tornado damage using machine learning and statistical validation.
+This repository contains the code and data for the paper "Identifying Vulnerability Factors in Historic Buildings under Tornado Loading".
 
-## Overview
+### Key Scripts
+*   `replicate_analysis.py`: Main script to run the ML pipeline (Random Forest, XGBoost, etc.), perform permutation importance, and generate performance metrics.
+*   `generate_data_plots.py`: Generates data distribution plots (Figure 2, 3, 4).
+*   `generate_supp_plots.py`: Generates supplementary predictor plots (Figure 5) with statistical annotations (Mann-Whitney U).
+*   `generate_shap_dependence.py`: Generates SHAP dependence plots (Figure 9, 10) with threshold lines.
+*   `smote_ablation.py`: Performs ablation study to validate SMOTENC usage.
 
-This project analyzes building-level damage data from the 2020 Nashville and 2021 Quad State tornadoes to identify potential vulnerability factors in historic unreinforced masonry (URM) structures. The analysis uses a multi-model machine learning framework with permutation importance and SHAP analysis to generate testable hypotheses for preservation engineering.
+### Data
+*   `Nashville_Tornado_DataInput_Final_110725.xlsx`: Nashville dataset.
+*   `QuadState_Tornado_DataInputv2.csv`: Quad State dataset.
+
+### Outputs
+*   `tornado_vulnerability_outputs/`: Contains all generated figures and tables.
+*   `tornado_vulnerability_paper_updated.tex`: The LaTeX manuscript.
+ to identify potential vulnerability factors in historic unreinforced masonry (URM) structures. The analysis uses a multi-model machine learning framework with permutation importance and SHAP analysis to generate testable hypotheses for preservation engineering.
 
 ## Prerequisites
 

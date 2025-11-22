@@ -325,9 +325,9 @@ def run_analysis(df, numeric_cols, cat_cols, hazard_cols):
                     'Accuracy': acc_baseline
                 })
                 
-                # Permutation Importance (Delta Accuracy)
-                # We want (Permuted - Baseline). 
-                # If feature is important, Permuted < Baseline, so Delta is Negative.
+                # Permutation Importance (Decrease in Accuracy)
+                # We want (Baseline - Permuted). 
+                # If feature is important, Permuted < Baseline, so Delta is Positive.
                 for feat in X_val.columns:
                     # Save original column
                     original_feat = X_val[feat].values.copy()
@@ -342,14 +342,14 @@ def run_analysis(df, numeric_cols, cat_cols, hazard_cols):
                     # Restore
                     X_val[feat] = original_feat
                     
-                    delta_acc = acc_perm - acc_baseline
+                    delta_acc = acc_baseline - acc_perm
                     
                     perm_results.append({
                         'Setting': setting_name,
                         'Model': model_name,
                         'Feature': feat,
                         'Fold': i,
-                        'Delta_Accuracy': delta_acc
+                        'Decrease_in_Accuracy': delta_acc
                     })
 
     return pd.DataFrame(results), pd.DataFrame(perm_results)
@@ -360,56 +360,79 @@ def plot_permutation_importance(perm_df, stats_df, output_dir):
     for setting in perm_df['Setting'].unique():
         subset = perm_df[perm_df['Setting'] == setting]
         
-        # Filter for equivalent models
-        stats_subset = stats_df[stats_df['Setting'] == setting]
-        if not stats_subset.empty:
-            best_model = stats_subset['Best_Model'].iloc[0]
-            # Models with p > 0.05 are statistically equivalent (fail to reject null)
-            equiv_models = stats_subset[stats_subset['p_value'] > 0.05]['Model'].tolist()
-            keep_models = [best_model] + equiv_models
-            
-            print(f"  [{setting}] Keeping models: {keep_models}")
-            subset = subset[subset['Model'].isin(keep_models)]
+        # Filter for best models if stats provided
+        if stats_df is not None:
+            stats_subset = stats_df[stats_df['Setting'] == setting]
+            if not stats_subset.empty:
+                best_model_name = stats_subset['Best_Model'].iloc[0]
+                # Models with p > 0.05 are statistically equivalent (fail to reject null)
+                equiv_models = stats_subset[stats_subset['p_value'] > 0.05]['Model'].tolist()
+                keep_models = [best_model_name] + equiv_models
+                
+                print(f"  [{setting}] Keeping models: {keep_models}")
+                subset = subset[subset['Model'].isin(keep_models)]
             
         if subset.empty:
             continue
+            
+        # --- FILTERING LOGIC ---
+        # 1. Identify features > random_noise for at least one model
+        models = subset['Model'].unique()
+        important_features = set()
         
-        # Calculate average importance for sorting
-        avg_imp = subset.groupby('Feature')['Delta_Accuracy'].mean().sort_values()
+        for model in models:
+            model_data = subset[subset['Model'] == model]
+            mean_imp = model_data.groupby('Feature')['Decrease_in_Accuracy'].mean()
+            
+            if 'random_noise' in mean_imp:
+                noise_thresh = mean_imp['random_noise']
+                # Get features > threshold AND > 0
+                # We only want features that positively contribute to accuracy
+                feats_above_noise = mean_imp[(mean_imp > noise_thresh) & (mean_imp > 0)].index.tolist()
+                important_features.update(feats_above_noise)
+        
+        # 2. Remove 'random_noise' itself from the list
+        if 'random_noise' in important_features:
+            important_features.remove('random_noise')
+            
+        # 3. Filter the subset
+        subset_filtered = subset[subset['Feature'].isin(important_features)]
+        
+        if subset_filtered.empty:
+            print(f"  [{setting}] No features performed better than random noise.")
+            continue
+
+        # Calculate average importance for sorting (across kept models)
+        avg_imp = subset_filtered.groupby('Feature')['Decrease_in_Accuracy'].mean().sort_values(ascending=False)
         sorted_features = avg_imp.index.tolist()
         
         # Plot Overview (Boxplot)
-        plt.figure(figsize=(12, 10))
-        ax = sns.boxplot(data=subset, y='Feature', x='Delta_Accuracy', order=sorted_features, hue='Model', orient='h')
+        plt.figure(figsize=(12, 8)) # Adjusted height since fewer features
+        sns.boxplot(data=subset_filtered, y='Feature', x='Decrease_in_Accuracy', order=sorted_features, hue='Model', orient='h')
         plt.axvline(0, color='k', linestyle='--')
         
-        # Highlight random_noise label in red
-        for label in ax.get_yticklabels():
-            if label.get_text() == 'random_noise':
-                label.set_color('red')
-                label.set_fontweight('bold')
-                
-        plt.title(f'Permutation Importance (Delta Accuracy) - {setting}')
-        plt.xlabel('Delta Accuracy (Permuted - Baseline)')
+        plt.title(f'Top Predictors (Better than Random Noise) - {setting}')
+        plt.xlabel('Decrease in Accuracy (Baseline - Permuted)')
         plt.tight_layout()
         plt.savefig(f'{output_dir}/delta_accuracy_{setting}.png')
         plt.close()
         
-        # Grouped Plots by Model (Barplot with Highlight)
-        for model in subset['Model'].unique():
-            model_subset = subset[subset['Model'] == model]
-            avg_imp_model = model_subset.groupby('Feature')['Delta_Accuracy'].mean().sort_values()
+        # Grouped Plots by Model (Barplot)
+        for model in models:
+            model_subset = subset_filtered[subset_filtered['Model'] == model]
+            if model_subset.empty: 
+                continue
+                
+            # Re-sort for this specific model
+            avg_imp_model = model_subset.groupby('Feature')['Decrease_in_Accuracy'].mean().sort_values(ascending=False)
             sorted_features_model = avg_imp_model.index.tolist()
             
-            # Create colors: Red for random_noise, Blue/Grey for others
-            colors = ['red' if x == 'random_noise' else 'skyblue' for x in sorted_features_model]
-            
-            plt.figure(figsize=(10, 8))
-            sns.barplot(data=model_subset, y='Feature', x='Delta_Accuracy', order=sorted_features_model, palette=colors, errorbar='ci')
+            plt.figure(figsize=(10, 6))
+            sns.barplot(data=model_subset, y='Feature', x='Decrease_in_Accuracy', order=sorted_features_model, color='skyblue', errorbar='ci')
             plt.axvline(0, color='k', linestyle='--')
             
-            plt.title(f'Permutation Importance - {setting} - {model}')
-            plt.xlabel('Delta Accuracy (Permuted - Baseline)')
+            plt.title(f'Top Predictors - {setting} - {model}')
+            plt.xlabel('Decrease in Accuracy (Baseline - Permuted)')
             plt.tight_layout()
             plt.savefig(f'{output_dir}/perm_imp_{setting}_{model}.png')
             plt.close()
