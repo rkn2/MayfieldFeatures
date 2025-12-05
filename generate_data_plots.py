@@ -62,20 +62,33 @@ if 'year_built_u' in df.columns:
     plt.close()
     print("Generated supp_year_built_by_event.png")
 
-# --- Plot 2: EF Rating Distribution ---
-# Use correct column 'tornado_ef'
-ef_col = 'tornado_ef'
-if ef_col in df.columns:
-    plt.figure(figsize=(10, 8)) # Increased size
-    # Define explicit order
-    ef_order = [-1, 0, 1, 2, 3, 4]
-    # Filter out -1 or map it if needed, but usually we just plot what's there
-    sns.countplot(data=df, x=ef_col, order=ef_order, palette='viridis', edgecolor='white', linewidth=0.5)
-    plt.title('Distribution of EF Ratings', fontsize=18)
+# --- Plot 2: EF Rating Distribution (split by event)
+# Convert EF ratings (including 'subEF') to numeric values (-1 for subEF)
+ef_col_raw = 'tornado_ef'
+if ef_col_raw in df.columns:
+    def parse_ef(val):
+        if pd.isna(val):
+            return np.nan
+        s = str(val).strip().lower()
+        if s == 'subef':
+            return -1
+        s = s.replace('ef', '')
+        try:
+            return int(float(s))
+        except:
+            return np.nan
+    df['ef_numeric'] = df[ef_col_raw].apply(parse_ef)
+    # Create a display column where -1 is shown as 'sub'
+    df['ef_display'] = df['ef_numeric'].replace({-1: 'sub'})
+    plt.figure(figsize=(10, 8))  # Increased size
+    ef_order = ['sub', 0, 1, 2, 3, 4]
+    sns.countplot(data=df, x='ef_display', hue='event', order=ef_order, palette=event_colors, edgecolor='white', linewidth=0.5)
+    plt.title('Distribution of EF Ratings by Event', fontsize=18)
     plt.xlabel('EF Rating', fontsize=16)
     plt.ylabel('Count', fontsize=16)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
+    plt.legend(title='Event')
     sns.despine()
     plt.tight_layout()
     plt.savefig(f'{output_dir}/supp_ef_rating_dist.png', dpi=300)
