@@ -17,8 +17,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 print("Loading data and preparing for SHAP analysis...")
 
 # Load the processed data from the main analysis
-df_nash = pd.read_excel('Nashville_Tornado_DataInput_Final_110725.xlsx')
-df_qs = pd.read_csv('QuadState_Tornado_DataInputv2.csv', encoding='latin1')
+df_nash = pd.read_csv('updatedData/Nashville_Tornado_DataInput_Final_111425(in).csv')
+df_qs = pd.read_csv('updatedData/Revised_QuadState_Tornado_DataInput_pub - Copy_120525.csv', encoding='latin1')
 
 # Normalize columns
 def normalize_cols(df):
@@ -273,6 +273,14 @@ shap.plots.beeswarm(shap_values_obj[:, :, 0], max_display=20, show=False)
 plt.title('SHAP Summary: Features Driving Survival (Class 0)', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.savefig(f'{OUTPUT_DIR}/shap_beeswarm_class0.png', dpi=300, bbox_inches='tight')
+plt.close()
+
+# Beeswarm for Class 1 (Low Damage) - NEW
+plt.figure(figsize=(10, 8))
+shap.plots.beeswarm(shap_values_obj[:, :, 1], max_display=20, show=False)
+plt.title('SHAP Summary: Features Driving Low Damage (Class 1)', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.savefig(f'{OUTPUT_DIR}/shap_beeswarm_class1.png', dpi=300, bbox_inches='tight')
 plt.close()
 
 # Dependence Plot

@@ -13,8 +13,8 @@ os.makedirs(output_dir, exist_ok=True)
 
 # 1. Load Data
 print("Loading data...")
-df_nash = pd.read_excel('Nashville_Tornado_DataInput_Final_110725.xlsx')
-df_qs = pd.read_csv('QuadState_Tornado_DataInputv2.csv', encoding='latin1')
+df_nash = pd.read_csv('updatedData/Nashville_Tornado_DataInput_Final_111425(in).csv')
+df_qs = pd.read_csv('updatedData/Revised_QuadState_Tornado_DataInput_pub - Copy_120525.csv', encoding='latin1')
 
 def normalize_cols(df):
     df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '', regex=False)
