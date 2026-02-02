@@ -199,6 +199,28 @@ The findings are explicitly prioritized from the Hazard-Neutral condition for st
 \subsubsection{Preprocessing}
 Standard preprocessing procedures were applied to prepare data for modeling while preserving information content. Numeric features shown in \ref{tab:feature_classification} employed median imputation for missing values, replacing absent data with the dataset median to maintain distributional properties. Categorical features required different encoding strategies depending on the analytical method: ordinal encoding for the Synthetic Minority Over-sampling Technique for Nominal and Continuous data (SMOTENC) pipeline, and one-hot encoding for permutation importance analysis \cite{ratih2022synthetic}. This dual encoding approach ensures compatibility with each method's algorithmic requirements.
 
+\subsubsection{Engineered Geometric Features}
+To better capture physical failure mechanisms, raw geometric dimensions were transformed into six engineering ratios that govern structural stability and wind loading (Table~\ref{tab:engineered_features}). For instance, \textit{Parapet Slenderness} isolates the vulnerability of unbraced top-of-wall cantilevers, while \textit{Wall Slenderness} proxies out-of-plane buckling risk for unreinforced masonry. These engineered features were explicitly included to test whether physically meaningful ratios provide superior predictive power compared to raw dimensions.
+
+\begin{table}[h!]
+\centering
+\caption{Engineered Geometric Features}
+\label{tab:engineered_features}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Feature} & \textbf{Formula / Rationale} \\
+\midrule
+Aspect Ratio & Height / min(Width, Length). \textit{Global stability/overturning risk.} \\
+Wall Slenderness & Height / Thickness. \textit{Out-of-plane wall failure risk.} \\
+Parapet Slenderness & Parapet Height / Wall Thickness. \textit{Cantilever instability.} \\
+Roof-to-Wall Ratio & Roof Area / Wall Area. \textit{Uplift vs. Dead Load balance.} \\
+Mean Fenestration & Avg \% of openings. \textit{Internal pressure \& shear reduction.} \\
+Plan Aspect Ratio & max(L,W) / min(L,W). \textit{Aerodynamic shape effect.} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 Class imbalance was addressed using SMOTENC, which generates synthetic minority class examples by interpolating between existing cases in feature space while respecting categorical feature integrity. SMOTENC was applied strictly within cross-validation folds (k=5 neighbors), meaning synthetic examples were generated only from training data after each train-test split. This within-fold application prevents data leakage that would artificially inflate model performance if oversampling preceded cross-validation \cite{sasse2025overview}. The oversampling strategy balanced all three damage classes to equal representation within each training fold, while validation sets remained entirely real data.
 
 However, SMOTENC introduces concerns when minority classes are small. The low-damage class contains only 41 examples, meaning each synthetic case represents an interpolation among 25\% of available real examples (k=5 neighbors). This raises questions about whether synthetic examples reflect physically plausible building configurations or introduce artifacts. To validate SMOTENC's impact, an ablation study compared Random Forest performance with and without oversampling on the real dataset. Results showed minimal difference: Macro F1 improved marginally from 0.581 (with SMOTENC) to 0.609 (without).
@@ -521,6 +543,12 @@ building\_area\_m2 & Yes (Rank 10) & 11 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\end{tabular}
+\end{table}
+
+\subsection{Performance of Engineered Features}
+The inclusion of engineered geometric ratios provided additional physical insight, though raw dimensions remained highly predictive. \textbf{Wall Slenderness} emerged as a top-tier predictor (Rank 5), confirming that the relationship between height and thickness drives vulnerability. However, raw \textbf{Wall Thickness} (Rank 3) slightly outperformed the slenderness ratio, suggesting that absolute material depth---which correlates with shear capacity and debris resistance---may be as critical as stability against out-of-plane buckling. \textbf{Parapet Slenderness} (Rank 8) also proved significant, validating the hypothesis that thin, cantilevered elements at the roofline are specific points of failure. \textbf{Mean Fenestration} (Rank 13) contributed moderately, supporting the "Swiss cheese" vulnerability theory, but was secondary to primary structural system indicators.
 
 \subsection{SHAP Interaction Analysis}
 SHAP interaction analysis revealed patterns where hazard exposure amplifies specific building vulnerabilities. For Class 2 (Significant Damage), the strongest interactions involved distance combined with occupancy and wall substrate, reflecting how proximity to the tornado compounds risks inherent to specific building functions and material systems. Table~\ref{tab:shap_interactions} lists the top feature interactions, normalized against the main effect strengths of the constituent features. The interaction strengths typically represent 8--12\% of the main effect magnitude, indicating that while individual building features are the primary drivers of risk, their combination provides a non-trivial secondary modulation of vulnerability. Notably, purely structural interactions such as foundation type $\times$ retrofit type also emerge as top drivers (10\% of main effect), suggesting that the effectiveness of retrofits is heavily dependent on the foundation system's ability to transfer loads.
