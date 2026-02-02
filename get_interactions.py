@@ -141,3 +141,55 @@ parent_int_df = pd.DataFrame([
 ]).sort_values('Strength', ascending=False)
 
 print(parent_int_df.head(15))
+
+# --- Calculate Main Effect Strengths for Normalization ---
+# Diagonal of the interaction matrix represents the main effect in TreeExplainer (approx)
+# Or we can just calculate standard SHAP values
+shap_values = explainer.shap_values(X_enc)
+if isinstance(shap_values, list): # For classifier
+    shap_values_sig = shap_values[sig_idx]
+else:
+    shap_values_sig = shap_values
+
+# Mean absolute SHAP per feature (Main Effect Strength)
+# We need to aggregate this back to parent features too
+main_effects_raw = np.abs(shap_values_sig).mean(0)
+main_effects = {}
+
+for fe_idx, feat in enumerate(feature_names):
+    parent = get_parent(feat)
+    # Summing main effects of one-hot encoded cols to get parent influence?
+    # Or max? Sum makes sense for total importance.
+    main_effects[parent] = main_effects.get(parent, 0) + main_effects_raw[fe_idx]
+
+print("\n--- Normalized Interaction Strengths ---")
+# Add normalization
+norm_results = []
+for idx, row in parent_int_df.head(15).iterrows():
+    p1, p2 = row['Interaction'].split(' x ')
+    strength = row['Strength']
+    m1 = main_effects.get(p1, 0)
+    m2 = main_effects.get(p2, 0)
+    
+    # Ensure scalar
+    m1 = float(np.sum(m1))
+    m2 = float(np.sum(m2))
+    
+    # Avoid zero division
+    avg_main = (m1 + m2) / 2 if (m1 + m2) > 0 else 1e-6
+    relative_pct = (strength / avg_main) * 100
+    
+    norm_results.append({
+        'Interaction': row['Interaction'],
+        'Strength': strength,
+        'Main_Effect_1': m1,
+        'Main_Effect_name_1': p1,
+        'Main_Effect_2': m2,
+        'Main_Effect_name_2': p2,
+        'Relative_Pct_of_Main': relative_pct
+    })
+    
+norm_df = pd.DataFrame(norm_results)
+print(norm_df[['Interaction', 'Strength', 'Relative_Pct_of_Main']].to_string())
+if not norm_df.empty:
+    norm_df.to_csv('shap_interactions_normalized.csv', index=False)

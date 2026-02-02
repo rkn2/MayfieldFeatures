@@ -523,26 +523,26 @@ building\_area\_m2 & Yes (Rank 10) & 11 \\
 \end{table}
 
 \subsection{SHAP Interaction Analysis}
-SHAP interaction analysis revealed patterns where hazard exposure amplifies specific building vulnerabilities. For Class 2 (Significant Damage), the strongest interactions involved distance combined with occupancy and wall substrate, reflecting how proximity to the tornado compounds risks inherent to specific building functions and material systems. Table~\ref{tab:shap_interactions} lists the top feature interactions. Notably, purely structural interactions such as foundation type $\times$ retrofit type also emerge as top drivers, suggesting that the effectiveness of retrofits is heavily dependent on the foundation system's ability to transfer loads.
+SHAP interaction analysis revealed patterns where hazard exposure amplifies specific building vulnerabilities. For Class 2 (Significant Damage), the strongest interactions involved distance combined with occupancy and wall substrate, reflecting how proximity to the tornado compounds risks inherent to specific building functions and material systems. Table~\ref{tab:shap_interactions} lists the top feature interactions, normalized against the main effect strengths of the constituent features. The interaction strengths typically represent 8--12\% of the main effect magnitude, indicating that while individual building features are the primary drivers of risk, their combination provides a non-trivial secondary modulation of vulnerability. Notably, purely structural interactions such as foundation type $\times$ retrofit type also emerge as top drivers (10\% of main effect), suggesting that the effectiveness of retrofits is heavily dependent on the foundation system's ability to transfer loads.
 
 \begin{table}[h!]
 \centering
 \caption{Key Feature Interactions Driving Significant Damage (SHAP Analysis)}
 \label{tab:shap_interactions}
-\begin{tabular}{lc}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Feature Interaction} & \textbf{Strength} \\
+\textbf{Feature Interaction} & \textbf{Strength} & \textbf{\% of Main Effect} \\
 \midrule
-Distance $\times$ Occupancy & 0.0125 \\
-Occupancy $\times$ Wall Substrate & 0.0121 \\
-Distance $\times$ Wall Substrate & 0.0092 \\
-Foundation $\times$ Occupancy & 0.0086 \\
-Foundation $\times$ Retrofit Type & 0.0085 \\
-Roof Shape $\times$ Wall Substrate & 0.0079 \\
-Distance $\times$ Foundation & 0.0078 \\
-Occupancy $\times$ Retrofit Type & 0.0078 \\
-Foundation $\times$ Wall Cladding & 0.0073 \\
-Foundation $\times$ Wall Substrate & 0.0072 \\
+Distance $\times$ Occupancy & 0.0125 & 10.6\% \\
+Occupancy $\times$ Wall Substrate & 0.0121 & 12.0\% \\
+Distance $\times$ Wall Substrate & 0.0092 & 8.5\% \\
+Foundation $\times$ Occupancy & 0.0086 & 11.3\% \\
+Foundation $\times$ Retrofit Type & 0.0085 & 10.1\% \\
+Roof Shape $\times$ Wall Substrate & 0.0079 & 10.0\% \\
+Distance $\times$ Foundation & 0.0078 & 8.9\% \\
+Occupancy $\times$ Retrofit Type & 0.0078 & 6.9\% \\
+Foundation $\times$ Wall Cladding & 0.0073 & 10.2\% \\
+Foundation $\times$ Wall Substrate & 0.0072 & 8.3\% \\
 \bottomrule
 \end{tabular}
 \end{table}
