@@ -460,7 +460,7 @@ Statistical testing  confirmed that Random Forest and XGBoost are statistical eq
 
 Figure~\ref{fig:perm_imp} presents the permutation importance rankings for the Random Forest model. The results unequivocally show that distance from the tornado path is the dominant predictor of damage. This validates the physical reality that proximity to the vortex core outweighs most structural differences. However, crucially for preservation, several building features rank above the random noise threshold, indicating they offer statistically significant modifications to vulnerability even after accounting for distance.
 
-Key building features identified include retrofit type (the presence and type of structural retrofits) and wall cladding (the material and condition of the exterior skin), which act as critical modifiers of vulnerability. Additionally, roof substrate (the material decking beneath the roof covering) and roof slope (the geometry influencing aerodynamic uplift) emerged as significant predictors, underscoring the importance of the building envelope's integrity and aerodynamic profile in tornado resistance.
+Key building features identified include retrofit type (the presence and type of structural retrofits) and wall cladding (the material and condition of the exterior skin), which act as critical modifiers of vulnerability. Additionally, roof substrate (the material decking beneath the roof covering) and roof slope (the geometry influencing aerodynamic uplift) emerged as significant predictors, underscoring the importance of the building envelope's integrity and aerodynamic profile in tornado resistance. It is important to note, however, that features with high missingness, such as wall thickness, showed sensitivity to imputation methods (see Appendix A), suggesting their high ranking may partially reflect "informative missingness" where damage obscures measurement.
 
 \begin{figure}[h!]
     \centering
@@ -570,11 +570,7 @@ Progressive collapse & retrofit\_type, foundation & High & Absence critical & CR
 \end{tabular}
 \end{table}
 
-
-\subsection{Sensitivity Analysis: Impact of Missing Data}
-Given the high missingness in features such as wall thickness (36\%) and foundation type (36\%), a sensitivity analysis was conducted to evaluate the robustness of these findings under different imputation strategies. We compared the baseline Median/Informative imputation against Multiple Imputation by Chained Equations (MICE) and Missingness Indicators.
-
-The results confirm that distance to tornado path remains the dominant predictor (Rank 1) across all missingness assumptions, demonstrating the robustness of the hazard-focused model. However, the importance of wall thickness drops significantly under MICE (Rank 16 vs. Rank 5 in baseline), suggesting that its predictive power is partially derived from ``informative missingness''---i.e., the data is missing because the walls collapsed or were inaccessible due to severe damage. Conversely, foundation type rises in importance under MICE (Rank 5 vs. Rank 27), indicating that if foundation details were effectively recovered, they would likely serve as critical predictors of survival. These findings reinforce the tiered framework: while global hazard parameters are robust, specific structural attributes like wall thickness should be interpreted with the caveat that their signals may reflect damage-induced unobservability.
+The prioritization of these mechanisms must account for data limitations. As detailed in the Appendix, the high importance of wall thickness in the "Wall out-of-plane" mechanism is sensitive to missing data assumptions; this relationship likely captures both the physical vulnerability of thin walls and the fact that collapsed walls are difficult to measure. Conversely, findings for "Progressive collapse" (linked to foundation type) may underestimate risk, as sensitivity analysis suggests foundation type would be a stronger predictor if data were complete. Thus, engineering priorities for wall anchors and foundation load-paths remain critical despite, or perhaps because of, these observational challenges.
 
 \section{Discussion}
 
