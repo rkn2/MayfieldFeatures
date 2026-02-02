@@ -115,42 +115,37 @@ def engineer_features(df):
     if all(c in df.columns for c in required_coords):
         print("Calculating distance_km...")
         
+        def haversine_km(lat1, lon1, lat2, lon2):
+            R = 6371.0 # Radius of earth in km
+            dlat = np.radians(lat2 - lat1)
+            dlon = np.radians(lon2 - lon1)
+            a = np.sin(dlat/2)**2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(dlon/2)**2
+            c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+            return R * c
+
         def point_line_segment_distance(px, py, x1, y1, x2, y2):
-            # Planar approximation
-            # Convert lat/lon to km
-            # Mean lat for scaling
-            mean_lat = np.mean([y1, y2, py])
-            lat_scale = 111.0
-            lon_scale = 111.0 * np.cos(np.radians(mean_lat))
+            # px, py: point long, lat
+            # x1, y1: start long, lat
+            # x2, y2: end long, lat
             
-            # Scale coordinates to km
-            px_km, py_km = px * lon_scale, py * lat_scale
-            x1_km, y1_km = x1 * lon_scale, y1 * lat_scale
-            x2_km, y2_km = x2 * lon_scale, y2 * lat_scale
-            
-            # Vector math for point to segment distance
-            # Segment vector
-            dx = x2_km - x1_km
-            dy = y2_km - y1_km
+            # Project point onto line in lat/lon space to find 't' (closest point parameter)
+            dx = x2 - x1
+            dy = y2 - y1
             
             if dx == 0 and dy == 0:
-                return np.sqrt((px_km - x1_km)**2 + (py_km - y1_km)**2)
+                return haversine_km(py, px, y1, x1)
             
-            # Project point onto line (parameter t)
-            t = ((px_km - x1_km) * dx + (py_km - y1_km) * dy) / (dx*dx + dy*dy)
-            
-            # Clamp t to segment [0, 1]
+            t = ((px - x1) * dx + (py - y1) * dy) / (dx*dx + dy*dy)
             t = np.clip(t, 0, 1)
             
-            # Closest point
-            closest_x = x1_km + t * dx
-            closest_y = y1_km + t * dy
+            # Closest point coordinates
+            closest_x = x1 + t * dx
+            closest_y = y1 + t * dy
             
-            dist = np.sqrt((px_km - closest_x)**2 + (py_km - closest_y)**2)
-            return dist
+            # Calculate Haversine distance from point to closest point on segment
+            return haversine_km(py, px, closest_y, closest_x)
 
         # Apply to DataFrame
-        # Vectorized approach would be faster but apply is easier to write/read for now
         df['distance_km'] = df.apply(
             lambda row: point_line_segment_distance(
                 row['longitude'], row['latitude'],

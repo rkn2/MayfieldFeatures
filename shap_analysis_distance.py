@@ -41,22 +41,24 @@ df = df.dropna(subset=['target'])
 # Distance Calculation
 required_coords = ['tornado_start_lat', 'tornado_start_long', 'tornado_end_lat', 'tornado_end_long', 'latitude', 'longitude']
 if all(c in df.columns for c in required_coords):
+    def haversine_km(lat1, lon1, lat2, lon2):
+        R = 6371.0
+        dlat = np.radians(lat2 - lat1)
+        dlon = np.radians(lon2 - lon1)
+        a = np.sin(dlat/2)**2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(dlon/2)**2
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+        return R * c
+
     def point_line_segment_distance(px, py, x1, y1, x2, y2):
-        mean_lat = np.mean([y1, y2, py])
-        lat_scale = 111.0
-        lon_scale = 111.0 * np.cos(np.radians(mean_lat))
-        px_km, py_km = px * lon_scale, py * lat_scale
-        x1_km, y1_km = x1 * lon_scale, y1 * lat_scale
-        x2_km, y2_km = x2 * lon_scale, y2 * lat_scale
-        dx = x2_km - x1_km
-        dy = y2_km - y1_km
+        dx = x2 - x1
+        dy = y2 - y1
         if dx == 0 and dy == 0:
-            return np.sqrt((px_km - x1_km)**2 + (py_km - y1_km)**2)
-        t = ((px_km - x1_km) * dx + (py_km - y1_km) * dy) / (dx*dx + dy*dy)
+            return haversine_km(py, px, y1, x1)
+        t = ((px - x1) * dx + (py - y1) * dy) / (dx*dx + dy*dy)
         t = np.clip(t, 0, 1)
-        closest_x = x1_km + t * dx
-        closest_y = y1_km + t * dy
-        return np.sqrt((px_km - closest_x)**2 + (py_km - closest_y)**2)
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+        return haversine_km(py, px, closest_y, closest_x)
 
     df['distance_km'] = df.apply(
         lambda row: point_line_segment_distance(

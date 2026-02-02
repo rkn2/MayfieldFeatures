@@ -1,7 +1,7 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
-from replicate_analysis import load_and_preprocess_data, engineer_features
+from replicate_analysis_damage_target import load_and_preprocess_data, engineer_features
 
 # Use the new folder to keep new results together
 OUTPUT_DIR = 'tornado_vulnerability_outputs_damage_target' 
