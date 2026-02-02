@@ -604,6 +604,11 @@ Progressive collapse & retrofit\_type, foundation & High & Absence critical & CR
 \end{table}
 
 
+\subsection{Sensitivity Analysis: Impact of Missing Data}
+Given the high missingness in features such as wall thickness (36\%) and foundation type (36\%), a sensitivity analysis was conducted to evaluate the robustness of these findings under different imputation strategies. We compared the baseline Median/Informative imputation against Multiple Imputation by Chained Equations (MICE) and Missingness Indicators.
+
+The results confirm that \textbf{distance to tornado path} remains the dominant predictor (Rank 1) across all missingness assumptions, demonstrating the robustness of the hazard-focused model. However, the importance of \textbf{wall thickness} drops significantly under MICE (Rank 16 vs. Rank 5 in baseline), suggesting that its predictive power is partially derived from ``informative missingness''---i.e., the data is missing because the walls collapsed or were inaccessible due to severe damage. Conversely, \textbf{foundation type} rises in importance under MICE (Rank 5 vs. Rank 27), indicating that if foundation details were effectively recovered, they would likely serve as critical predictors of survival. These findings reinforce the tiered framework: while global hazard parameters are robust, specific structural attributes like wall thickness should be interpreted with the caveat that their signals may reflect damage-induced unobservability.
+
 \section{Discussion}
 
 The results confirm that while hazard exposure (distance) is the primary determinant of survival, intrinsic building features play a measurable role in the ``transition zone'' where damage is likely but not guaranteed.
