@@ -250,7 +250,7 @@ Fenestration Percentage & Wall Details (system, substrate, cladding) \\
 \subsection{Model Selection and Validation Strategy}
 Six model families were benchmarked to ensure that the findings generalize across algorithmic approaches, a consideration for preservation applications.
 The model suite includes Decision Tree as a baseline non-linear model, Random Forest as an ensemble method, Logistic Regression as a multinomial linear baseline, Ridge Classifier as an L2-regularized linear model, Linear SVC as a support vector classifier, and XGBoost as a gradient boosting implementation.
-All the models employed balanced class weighting to address class imbalance, while hyperparameters were selected based on preliminary tuning with details available in supplementary materials.
+All the models employed balanced class weighting to address class imbalance, while hyperparameters were selected based on preliminary tuning (Table~\ref{tab:hyperparameters} in Appendix~\ref{sec:hyperparameters}).
 
 Repeated stratified K-fold cross-validation was implemented with five folds and five repeats, yielding 25 evaluation rounds per model.
 This design preserves class proportions in each fold, which proves essential given the 78\% undamaged, 11\% low damage, and 11\% significant damage distribution. 
@@ -673,6 +673,30 @@ Analysis code and additional materials are available from the corresponding auth
 This material is based upon work supported by the National Science Foundation under Grant No. IIS-2123343, CMMI-2222849, and CMMI-2442653. The authors thank the StEER Network and field reconnaissance teams for their contributions.
 
 \appendix
+
+\section{Model Hyperparameters}
+\label{sec:hyperparameters}
+
+Table~\ref{tab:hyperparameters} details the specific hyperparameter configurations used for the final model training, selected based on preliminary tuning to balance performance and generalizability.
+
+\begin{table}[h!]
+\centering
+\caption{Hyperparameter Configurations}
+\label{tab:hyperparameters}
+\small
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Model} & \textbf{Parameters} \\
+\midrule
+Random Forest & n\_estimators=200, min\_samples\_leaf=2, class\_weight='balanced\_subsample' \\
+XGBoost & n\_estimators=300, max\_depth=6, learning\_rate=0.08, subsample=0.8, colsample\_bytree=0.8, objective='multi:softprob' \\
+Logistic Regression & class\_weight='balanced', max\_iter=1000 \\
+Ridge Classifier & class\_weight='balanced' \\
+Linear SVC & class\_weight='balanced' \\
+Decision Tree & Default parameters (random\_state=42) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Detailed Classification Report}
 
