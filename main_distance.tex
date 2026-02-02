@@ -1,0 +1,708 @@
+\documentclass[preprint,12pt]{elsarticle}
+
+%% The amssymb package provides various useful mathematical symbols
+\usepackage{amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage[figurename=Fig.,labelfont=bf,labelsep=period]{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{newtxtext,newtxmath}
+\usepackage[colorlinks=true,citecolor=red,linkcolor=black]{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{lineno}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows, positioning, shadows}
+\linenumbers
+
+\journal{Engineering Structures}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Examining the Relationships Between Historic Building Features and Tornado Damage: A Feature Importance Analysis with Statistical Validation}
+
+\author[1]{Saanchi S. Kaushal}
+\author[1]{Yishuang Wang}
+\author[2]{Mariantonieta {Gutierrez Soto}, M.ASCE}
+\author[1,*]{Rebecca Napolitano, M.ASCE}
+
+\address[1]{Dept. of Architectural Engineering, Pennsylvania State University, University Park, PA 16802, United States}
+\address[2]{School of Engineering Design and Innovation, The Pennsylvania State University, 307 Engineering Design and Innovation Bldg., University Park, PA 16802, United States}
+\cortext[cor1]{Corresponding author. Email: nap@psu.edu}
+
+\begin{abstract}
+Historic masonry buildings constitute significant cultural and economic assets in tornado-prone regions, yet their vulnerability characteristics remain poorly quantified. This study analyzes damage patterns in 382 historic structures exposed to the 2020 Nashville (EF3/EF4) and 2021 Quad State (EF4) tornado outbreaks, employing interpretative machine learning to identify building features governing tornado vulnerability. To avoid the circularity of damage-based EF ratings while capturing hazard exposure, the analysis incorporates distance to the tornado path alongside intrinsic building attributes. Results indicate that distance is the primary predictor of damage, defining a critical ``transition zone'' where structural interventions are most effective. Beyond hazard exposure, key building features including retrofit status, wall cladding, and roof substrate emerge as significant predictors. Feature rankings were validated against random noise controls to establish statistical significance. Rather than providing prescriptive design specifications, this work establishes an evaluation framework identifying high-priority targets for wind tunnel testing and detailed engineering assessment, guiding resource allocation for the vulnerable historic building stock.
+\end{abstract}
+
+\begin{keyword}
+Tornado Damage \sep Feature Importance \sep Historic Buildings \sep Machine Learning \sep Statistical Validation \sep Permutation Importance
+\end{keyword}
+
+\end{frontmatter}
+
+\section{Introduction}
+
+The preservation of historic building stock faces an existential threat due to the increasing frequency and intensity of severe convective storms.
+There are over 95,000 historic buildings in the United States \cite{nps_nationalregister_database2025}, they often act as the economic and cultural anchors of their communities, are particularly vulnerable to tornado-induced wind loads due to construction practices that predate modern engineering codes \cite{bruneau1994state}.
+The devastation of Mayfield, Kentucky's historic district during the 2021 Quad State tornado outbreak serves as a stark reminder of this fragility \cite{kaushal2023understanding}.
+While modern building codes have evolved to improve life safety, historic structures, often characterized by unreinforced masonry (URM) and gravity-based connections \cite{CEDEngineeringURMAssessment}, occupy a precarious position where standard engineering interventions may conflict with preservation mandates for material integrity and reversibility \cite{roca2011restoration}.
+
+A challenge in mitigating this risk is the lack of empirical data linking specific historic building features to tornado performance.
+Preservation professionals often rely on anecdotal evidence or generalized wind engineering principles that may not fully capture the complex failure mechanisms of aged structures.
+Furthermore, the "transition zone" of damage, where buildings sustain repairable structural damage without progressing to total loss, remains poorly understood, yet this is precisely the domain where preservation interventions are most valuable. This intermediate damage state, characterized by partial roof loss, wall cracking, or localized collapse that can be addressed through structural restoration rather than demolition, represents the critical threshold determining whether historic structures can be saved following tornado impact. Unlike undamaged buildings (requiring no intervention) or completely destroyed structures (beyond repair), transition zone buildings face uncertain futures where preservation decisions depend on accurate damage assessment and targeted retrofitting strategies. 
+
+To address this knowledge gap, the study implements an exploratory machine learning analysis of post-tornado damage data.
+The primary objective is not to develop a predictive black-box model for automated assessment, but rather to use interpretable machine learning techniques to generate testable hypotheses regarding historic building vulnerability. The key question being  which observable features differentiate structures that survive from those that experience significant damage in historic-style construction. Clarifying these differences supports a more targeted and impactful use of limited preservation resources for engineering assessments and retrofit planning.
+
+The authors also recognize the limitations of the dataset, particularly the small sample size of ``low damage" cases (n=20) and the inherent circularity of damage-based EF ratings. To tackle this, the research utilizes statistical equivalence testing and a random noise guardrail to filter out spurious correlations. 
+Permutation Importance was implemented for global feature ranking \cite{fisher2019all} and integrated with SHAP (SHapley Additive exPlanations) analysis \cite{merrick2020explanation}, computed on held-out validation data to explore potential interaction effects.
+This approach moves the study beyond simple correlation to identify mechanistic candidates for future investigation, such as the compounding risk of specific wall-roof combinations. In doing so, the study established a data-driven foundation for more nuanced discussions about risk, resilience, and the limits of intervention in the historic built environment. The analytical framework prioritizes methodological safeguards that prevent spurious findings, recognizing that preservation decisions based on unreliable correlations could lead to ineffective or counterproductive interventions.
+
+The proposed approach incorporates several methodological innovations that distinguish it from conventional disaster assessment studies. Instead of reporting results from a single purportedly optimal model, a practice that risks overfitting to dataset idiosyncrasies, the analysis benchmarks six model families using statistical equivalence testing to identify all models whose performance is indistinguishable from the best.
+This multi-model validation ensures that identified vulnerabilities replicate across different analytical approaches, substantially increasing confidence in the findings.
+Additionally, a synthetic random feature is introduced as a negative control. If this noise variable appears among the important features, the validity of the analysis is called into question \cite{merrick2019randomized}. This provides an objective quality check that is largely absent from existing disaster assessment studies.
+
+The combination of permutation importance analysis, which provides global feature rankings, with SHAP analysis, which reveals instance-level mechanisms and feature interactions, proves particularly valuable for historic preservation applications. While permutation importance identifies which features matter across the entire building stock, SHAP analysis reveals how these features combine in specific buildings, enabling preservation professionals to identify structures facing compounded risk from multiple vulnerabilities. For instance, SHAP analysis reveals that wall substrates and building height both push predictions toward significant damage, though this cannot quantify whether their combined effect is additive or multiplicative without formal interaction testing.
+Such interaction effects are important for retrofit prioritization, as addressing either vulnerability factor in isolation provides limited benefit compared to holistic interventions.
+
+The results from this study demonstrate that feature importance analysis can yield valid scientific insights even when predictive model performance appears modest by conventional machine learning standards.
+While the macro F1 score (0.48) reflects genuine difficulty in predicting the rare transitional ``Low" damage class, the models successfully identify buildings at the highest collapse risk (F1=0.72 for Significant Damage), the outcome most relevant for preservation prioritization. This distinction between predictive accuracy and feature importance reliability carries implications for disaster assessment research, where perfect prediction often proves impossible, yet actionable insights remain achievable.
+
+\section{Data}
+\subsection{Tornado Events and Data Collection}
+
+The analysis draws upon building-level damage data from two major tornado events.
+The first event occurred on March 3, 2020, when an EF3-EF4 tornado carved a 25-mile track through Nashville, Tennessee \cite{nashvillesteer2020}, while the second event, the December 10-11, 2021 Quad State tornado, produced a long-track EF4 tornado affecting Kentucky, Tennessee, Arkansas, and Missouri \cite{mayfieldsteer21}. Following the tornadoes, the Structural Extreme Events Reconnaissance Network (StEER) deployed the Virtual Field Assessment Team (VAST)  and the Field Assessment Structural Team (FAST) for Nashville \cite{nashvillesteer2020} and Quad State \cite{mayfieldsteer21} to document the extent of damages. The authors participated in both the field deployments. 
+
+
+Damage was evaluated for 382 buildings across both tornado events, of which 230 were listed in the\textit{ National Register of Historic Places}. Data collection employed two complementary approaches: on-site field reconnaissance for structures with safe access, and virtual assessment using pre- and post-event remote sensing for buildings where physical access was restricted or pre-tornado documentation was available.
+
+Field reconnaissance focused on Mayfield's downtown historic district \cite{nationalregister1996}, which sustained catastrophic damage during the Quad State tornado outbreak. The district's concentration of buildings constructed between 1850 and 1930 provided a unique opportunity to study tornado vulnerability in historic masonry structures predating wind engineering codes. On-site data collection utilized the Fulcrum application for standardized damage surveys, DJI Matrice drones for aerial documentation, and Street View cameras for façade capture \cite{kaushal2023understanding, ywang2025datanash}. 
+
+Virtual reconnaissance extended the dataset beyond field-accessible buildings, evaluating all historic structures within a 2-mile radius of tornado paths for both the Quad State \cite{kaushal2025datamay} and Nashville \cite{ywang2025datanash} events. High-resolution aerial imagery (5--7.5~cm ground sample distance) from Nearmap \cite{nearmap_aerial_imagery} and Google Earth \cite{google_street_view} provided roof-level details including geometry, slope, and covering materials. Street-level panoramas from Google Street View captured façade conditions, fenestration patterns, and cladding systems. Pre-event imagery proved particularly valuable for documenting original construction details—roof substrates, wall materials, parapet heights, connection types—subsequently destroyed or obscured by damage, enabling retrospective assessment of as-built conditions influencing tornado performance.
+
+Data collection followed standardized StEER protocols \cite{kijewski2019handbook}, systematically documenting structural attributes, geometric properties, and damage indicators for each building. Structural features captured included construction type (masonry unreinforced, wood frame, hybrid systems), wall substrate and thickness, foundation type, and Main Wind Force-Resisting System (MWFRS) configuration. Roof characteristics received particular emphasis given their documented influence on tornado performance \cite{razavi2021effects}, with assessors recording roof shape (gable, hip, flat, mansard), slope, substrate material, covering type, and overhang dimensions. Wall and fenestration details documented cladding materials, opening percentages on all elevations, and parapet heights where present, as these features influence both structural capacity and internal pressurization following envelope breach \cite{thampi2011finite}. 
+
+Field and remote observations were supplemented with archival data from the National Register of Historic Places (NRHP) database, providing construction dates, architectural styles, and documentation of previous alterations or retrofits. The combined dataset comprised 382 buildings constructed between 1850 and 1950 across both tornado events. Temporal distribution of the building stock (Figure~\ref{fig:supp_age}) confirms the historic character, with peak construction years between 1890 and 1930. The Quad State sample exhibits a longer tail of pre-1880 structures compared to Nashville, reflecting Mayfield's older urban core. Of the 382 buildings, 230 held formal historic designation through the National Register of Historic Places or local historic districts (10 Nashville, 220 Quad State), while the remaining 150 buildings exhibited similar construction characteristics (masonry bearing walls, timber roof framing, shallow foundations), but lacked formal designation, representing the vernacular historic building stock vulnerable to tornado damage.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{tornado_vulnerability_outputs_v2/supp_year_built_by_event.png}
+    \caption{Distribution of building construction years by tornado event.
+The dataset is concentrated between 1890 and 1930, with Quad State including a tail of older (pre-1880) structures.}
+    \label{fig:supp_age}
+\end{figure}
+
+\subsection{Dataset Characteristics}
+
+The combined dataset comprises 382 historic masonry buildings spanning construction years 1850--1950, exposed to EF-scale tornado intensities ranging from EF0 to EF4. While all buildings share fundamental characteristic of masonry construction, substantial variation exists across structural, geometric, material, and hazard dimensions that govern tornado vulnerability.
+
+Structural attributes include number of stories (1--4), roof shape (gable, hip, flat, mansard), foundation type (rubble stone, brick pier, continuous wall), and MWFRS configuration distinguishing frame-based versus masonry diaphragm lateral systems. Geometric properties vary across building footprint area (40--5,630~m$^2$), height (3.5--23.3~m), wall dimensions (side length 4.9--92~m, front length 5.5--211~m), and roof slope (0--60$^\circ$). Material characteristics capture heterogeneity through wall thickness (0.2--0.6~m), wall substrate type (masonry unreinforced, reinforced, wood frame), roof substrate (dimensional lumber, trusses, wood sheathing grade), roof covering (asphalt, slate, clay tile, metal), and cladding systems (brick veneer, wood siding, stucco). Envelope features document fenestration percentage on each elevation (0--90\%), parapet height (0--1.5~m), and overhang length (0--5~m), all influencing wind pressure distribution and internal pressurization risk.
+
+Hazard variables quantify tornado exposure through EF rating assigned to each building location and distance from tornado path centerline (0--2~km). The distribution of EF ratings (Figure~\ref{fig:supp_ef}) reflects differing intensities between events: the Quad State tornado contributed higher proportions of EF3 and EF4 exposures, while Nashville exhibited more EF0--EF2 exposures, providing variance necessary to study building performance across the full intensity spectrum. Contextual factors include urban setting (isolated, row-middle, row-end), building position relative to street, occupancy type (residential, commercial, religious, institutional), and historic designation status (NRHP-listed versus visual assessment). This multidimensional feature space enables statistical models to identify vulnerability patterns specific to historic masonry construction while accounting for confounding factors such as building size, occupancy-driven design differences, and spatial clustering within historic districts.
+
+This multidimensional feature space enables statistical models to identify vulnerability patterns specific to historic masonry construction while accounting for confounding factors such as building size, occupancy-driven design differences, and spatial clustering within historic districts.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{tornado_vulnerability_outputs_v2/supp_ef_rating_dist.png}
+    \caption{Distribution of EF ratings in the dataset. The Quad State tornado outbreak event contributes the majority of high-intensity (EF3-EF4) exposures.}
+    \label{fig:supp_ef}
+\end{figure}
+
+\subsection{Target Variable and Class Distribution}
+Damage observed during reconnaissance was classified using the five-category StEER definitions (undamaged, minor, moderate, major, destroyed). However, intermediate damage states contained fewer than 10 observations each, making statistical analysis with this fine-grained classification impractical. The original categories were therefore collapsed into three classes defined by preservation outcomes: Class 0 (Undamaged) requires no intervention, Class 1 (Low Damage) requires repair but preserves historic fabric, and Class 2 (Significant Damage) necessitates major reconstruction or represents total loss. This aggregation strategy follows established practices for handling limited sample sizes and reducing class sparsity \cite{Konietschke2021Small,Torgo2011DataMiningR}.
+
+
+The resulting dataset exhibits severe class imbalance characteristic of post-disaster surveys (Figure~\ref{fig:supp_damage}): 294 buildings (77\%) sustained no damage requiring intervention, 41 buildings (11\%) experienced repairable damage preserving the majority of historic material, and 47 buildings (12\%) suffered severe damage or total loss. This three-class structure prioritizes the critical preservation decision boundary distinguishing structures that can be saved from those facing demolition, rather than imposing artificial distinctions among undamaged or catastrophically damaged buildings where preservation interventions offer no value.
+
+The class imbalance creates methodological challenges for performance evaluation. Simple accuracy would be misleading, as a naïve classifier predicting "undamaged" for all buildings achieves 77\% accuracy while providing no useful information. Macro-averaged F1 score is therefore employed as the primary performance metric, as it equally weights performance across all damage classes regardless of sample size, penalizing models that ignore minority classes \cite{he2009learning,grandini2020metrics}. This ensures models demonstrate meaningful discriminative capacity for the preservation-critical Low and Significant Damage categories, not merely high accuracy from correctly classifying the dominant Undamaged class.
+
+Analysis of building age versus damage severity (Figure~\ref{fig:supp_age_damage}) reveals no strong correlation, indicating that construction era alone does not predict vulnerability. Rather, specific structural details (wall thickness, roof-wall connections, retrofit presence) and maintenance conditions likely govern tornado performance independent of building age, motivating the feature-based vulnerability analysis presented in subsequent sections.
+
+\begin{figure}[h!]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{tornado_vulnerability_outputs_v2/supp_damage_by_event.png}
+    \includegraphics[scale = 0.6]{tornado_vulnerability_outputs_v2/supp_damage_by_event.png}
+    \caption{Proportion of damage classes by tornado event.
+Quad State shows a higher rate of significant damage due to the direct impact on the historic district.}
+    \label{fig:supp_damage}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{tornado_vulnerability_outputs_v2/supp_year_built_by_damage.png}
+    \caption{Boxplot of Year Built by Damage Class.
+The lack of a clear linear trend suggests age alone is not a strong predictor of vulnerability.}
+    \label{fig:supp_age_damage}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{tornado_vulnerability_outputs_v2/supp_dist_damage_.png}
+    \caption{Boxplot of Tornado Distance by Damage Class.
+The overlapping distributions suggest distance alone is not a strong predictor of vulnerability.}
+    \label{fig:supp_dist_damage}
+\end{figure}
+
+Figure~\ref{fig:supp_age_damage} shows the distribution of construction years across damage classes. The three boxplots exhibit substantial overlap, with all classes centered around 1900 (median years: Undamaged 1900, Low Damage 1905, Significant Damage 1910). This overlap indicates that building age alone does not reliably predict tornado vulnerability. Older buildings are not systematically more vulnerable than newer ones in this dataset, nor are the newest buildings systematically safer.
+
+This absence of a clear age-damage relationship contradicts the intuitive expectation that older buildings, having experienced more degradation, should perform worse. However, the pattern reflects survivorship bias rather than age-irrelevance. Pre-1880 structures present in the dataset represent a pre-selected cohort of high-quality survivors: poorly constructed contemporaries were demolished decades ago, leaving only robust examples. In contrast, buildings from the 1900--1920 construction age includes development that has not yet been culled by time or economic obsolescence. Additionally, pre-1880 buildings are more likely to hold formal historic designation, receiving preservation-quality maintenance that offsets age-related degradation, while early 20th-century buildings may lack both designation protections and consistent owner investment.
+
+The overlapping distributions demonstrate that chronological age functions as a poor vulnerability proxy without accounting for maintenance history, original construction quality, and most critically, tornado exposure variables that govern actual wind loading. Two buildings constructed in 1900 may exhibit drastically different performance if one experienced EF0 winds at 1~km from the tornado path while the other faced EF3 winds at 100~m distance. Age-based screening would misclassify both. This finding motivates the feature-based vulnerability analysis in subsequent sections, which identifies specific structural characteristics (wall thickness, roof geometry, retrofit presence) governing performance independent of construction era.
+% \hl{was going to add a plot to show damage/dist/year but it might just confuse everyone)}
+
+Additionally, figure~\ref{fig:supp_dist_damage} reveals the relationship between distance from tornado centerline and damage outcomes. Low damage buildings exhibit the tightest distribution, defining a narrow "transition zone" where wind speeds cause repairable structural damage without progression to total loss. Significantly damaged buildings show greater median distance and wider dispersion than low damage cases, reflecting the confounding influence of local EF rating variation along the tornado path—buildings 2--3~km from an EF4 centerline can experience EF2--EF3 winds exceeding design thresholds, while buildings 1~km from an EF1 path may sustain only minor damage. Undamaged buildings span the full distance range, with substantial overlap across all damage classes. This overlap demonstrates that distance alone, without accounting for local wind speed and building-specific structural characteristics, provides insufficient damage prediction. The finding motivates hazard-neutral modeling approaches isolating intrinsic building vulnerabilities independent of tornado exposure intensity.
+
+
+\subsection{Wind Vulnerability in Masonry Structures}
+Unreinforced masonry buildings exhibit tornado vulnerability mechanisms stemming from their fundamental structural characteristics. Historic masonry construction employed load-bearing walls as the primary structural system \cite{biggs2007hybrid}, with two-leaf or three-leaf configurations providing compressive capacity but negligible tensile strength due to masonry's anisotropic material properties \cite{lourencco1999historical}.\hl{I didn't see anything in the paper mentioning 2-leaf/3-leaf, maybe we are talking about this paper?} \url{https://www.witpress.com/elibrary/wit-transactions-on-the-built-environment/83/15317}Traditional gravity-based connections between roof and wall elements, while adequate for transferring shear forces under normal loading, prove inadequate for resisting tensile uplift forces generated by tornado wind fields \cite{sparks1989wind}.
+
+Failure initiates through several mechanisms that frequently interact to produce progressive collapse. Out-of-plane wall failure occurs when applied pressure causes masonry walls to act as one-way slabs spanning between floor and roof diaphragms; insufficient anchorage to these horizontal elements leads to mid-height cracking and potential wall collapse \cite{fema_p807}. Roof uplift results from negative pressure coefficients on leeward and roof surfaces \cite{stathopoulos2020wind}, with failure of roof-to-wall connections allowing entire roof system separation. Parapet overturning generates large moments at the base of unbraced masonry elements projecting above the roofline, particularly vulnerable given their exposure to peak wind velocities and lack of lateral restraint. Internal pressurization from breached envelope openings (windows, doors, cladding) can amplify net roof uplift forces \cite{mehta1976wind,kopp2018large}, transforming moderate external suction into failure-inducing combined loading.
+
+These mechanisms exhibit cascading interdependence. Cladding loss or fenestration breach precedes structural damage through internal pressurization initiation \cite{kopp2018large}. Roof loss removes lateral bracing for tall masonry walls, triggering secondary out-of-plane collapse even after wind speeds decrease. Parapet failure generates debris impact loading on adjacent roof and wall surfaces. The spatial heterogeneity of wind pressures across building surfaces, varying with geometry and orientation \cite{holmes1983wind}, means simultaneous loading combinations differ substantially from design assumptions based on uniform pressure distributions, creating unexpected stress states that exploit connection and material vulnerabilities inherent to unreinforced masonry construction.
+
+% Unreinforced masonry buildings fail under tornado loading through several well-documented mechanisms.
+% Out-of-plane wall failure occurs when wind pressure causes masonry walls to act as one-way slabs spanning between floor and roof diaphragms; insufficient anchorage leads to wall collapse \cite{fema_p807}.
+% Roof uplift results from negative pressure on leeward surfaces, with failure of roof-to-wall connections (often gravity-based in historic construction) leading to progressive collapse \cite{asce7_22}.
+% Parapet overturning generates large moments at the base of unbraced masonry elements above the roof line \cite{ingham_griffith}.
+% Internal pressurization from breached openings can dramatically increase net uplift on roofs \cite{mehta1976wind}.
+% These mechanisms interact; roof loss removes lateral bracing for walls, potentially triggering secondary failures.
+
+\section{Methodology}
+
+
+\subsection{Overview of Multi-Model Framework}
+Following the theoretical framework established by \cite{shmueli2010}, this study prioritizes explanatory modeling over pure prediction, to distinguish between models designed to identify causal mechanisms versus those optimized solely for forecasting. Understanding which building features drive vulnerability is more valuable than achieving marginal gains in aggregate classification accuracy for preservation engineering. Recent empirical work by \cite{lee2024} demonstrates that feature importance rankings remain stable and valid even when model performance degrades, given that the degradation stems from irreducible noise rather than sample size limitations.
+
+For this study, six model families were benchmarked and statistical equivalence testing was implemented to identify all models that perform indistinguishably from the top performer as compared to reporting results from a single optimal model. To ensure that the vulnerabilities identified reflect genuine building characteristics rather than algorithmic artifacts, the findings were replicated across multiple equivalent models. This cross-model validation helped filter out model-specific noise and reduced the risk that preservation recommendations rest on idiosyncratic behavior. As a result, features ranking highly across different algorithmic approaches represent a genuine signal, providing preservation professionals with confidence that retrofit priorities address real vulnerabilities.
+
+A synthetic negative control feature was generated from a standard normal distribution with a fixed random seed and added to the dataset, as established \cite{stoppiglia2003} and operationalized in the Boruta algorithm. This random probe contained zero information and provided an objective baseline for statistical significance.
+Any physical feature (such as parapet height or MWFRS configuration) that consistently outperforms this random baseline across multiple model families is statistically distinguishable from noise, regardless of the model's overall accuracy \cite{stoppiglia2003}.
+This guardrail served two purposes for preservation applications; 
+This random noise feature serves as a quality control mechanism with two functions. First, if random noise ranks among important predictors, the analysis is flawed—indicating data leakage or spurious correlations that would render any preservation recommendations unreliable. Second, the noise feature provides an objective threshold that any building feature ranking below random noise lacks genuine predictive signal and should be excluded from interpretation, preventing preservation resources from being misdirected toward irrelevant characteristics.
+
+\subsection{Data Preparation}
+Two hazard variables helped quantify tornado exposure: EF rating and distance from tornado path. EF rating represents tornado intensity at each building location that was assigned during damage surveys. These ratings (EF0 through EF5) were encoded as integers 0 through 5, while subEF events (wind speeds below EF0 threshold) were coded as -1. Distance from tornado path represents the shortest distance from each building centroid to the tornado track centerline, calculated as point-to-segment distance using planar approximation with latitude-dependent coordinate scaling \cite{chopde2013landmark}. 
+
+One of the challenges with tornado damage modeling is the potential for circular reasoning when using EF ratings as predictors. Since EF ratings are post-hoc intensity estimates often derived from the building damage \cite{mcdonald2010enhanced}, including them creates a tautological loop where the outcome (damage) implicitly informs the predictor (EF). To address this, the analysis was conducted under two distinct conditions: First, the Hazard-Neutral approach  was considered to represent structural truth. This condition excluded EF rating and distance-to-track, forcing the model to predict damage solely based on intrinsic building characteristics (e.g., geometry, materials, age). This was the primary lens for identifying structural vulnerabilities, as it eliminates the circularity of the EF scale.
+Second, the Hazard-Inclusive approach was implemented to provide contextual control.
+This condition includes hazard features to quantify how much predictive power is gained by knowing the wind intensity and distance to the building. While this introduces circularity, it serves as a necessary control to benchmark the relative importance of structural features against the overwhelming force of the winds.
+The findings are explicitly prioritized from the Hazard-Neutral condition for structural recommendations, treating Hazard-Inclusive results primarily as a validation of the model's ability to capture basic physical reality (i.e., stronger winds cause more damage).
+
+\begin{table}[h!]
+\centering
+\caption{Dataset Composition by Key Features (with Missingness)}
+\label{tab:dataset_composition}
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Feature} & \textbf{Category} & \textbf{Count (\%)} & \textbf{Missing (\%)} \\
+\midrule
+Number of Stories & 1 Story & 250 (65\%) & 0\% \\
+& 2 Stories & 110 (28\%) & \\
+& 3+ Stories & 26 (7\%) & \\
+\midrule
+Roof Shape & Gable & 280 (73\%) & 0\% \\
+& Hip & 60 (16\%) & \\
+& Flat & 46 (12\%) & \\
+\midrule
+Foundation Type & Continuous & 300 (78\%) & 36\% \\
+& Pier & 50 (13\%) & \\
+& Slab & 36 (9\%) & \\
+\midrule
+Roof Substrate & Board/Plank & 304 (80\%) & 19.6\% \\
+Wall Substrate & URM/Brick & 182 (48\%) & 13.1\% \\
+Retrofit Type & Present & 107 (28\%) & 8\% \\
+Wall Thickness & Mean: 380mm & -- & 36\% \\
+Fenestration (\%) & Mean: 15-20\% & -- & 15-20\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+High missingness (>10\%) is observed for several features, particularly those requiring interior access or detailed inspection. 
+This missingness is likely informative rather than random: buildings with extensive damage may have had inaccessible interiors, while remote-sensing-only assessments could not document hidden details.
+For retrofit-related features, missing data often indicates ``no retrofit was documented during reconnaissance,'' which can mean there was no retrofit or inaccessible due to building collapse. Preprocessing preserved this information through two strategies, median imputation for numeric categories and ordinal encoding for categorical features. This allows models to learn whether "unknown" status correlates with damage. For instance, if buildings with "unknown" wall substrates exhibit systematically higher vulnerability than those with confirmed construction details.
+
+However, the authors acknowledge that this high rate of missingness limits the certainty of the conclusions regarding these specific variables. Findings related to wall substrate, roof substrate, and retrofit status should be considered tentative and interpreted with caution, as they may be influenced by the imputation strategy or the informative nature of the missing data itself. Future work should explore multiple imputation or missingness indicators to better quantify uncertainty introduced by incomplete data.
+
+\subsubsection{Preprocessing}
+Standard preprocessing procedures were applied to prepare data for modeling while preserving information content. Numeric features shown in \ref{tab:feature_classification} employed median imputation for missing values, replacing absent data with the dataset median to maintain distributional properties. Categorical features required different encoding strategies depending on the analytical method: ordinal encoding for the Synthetic Minority Over-sampling Technique for Nominal and Continuous data (SMOTENC) pipeline, and one-hot encoding for permutation importance analysis \cite{ratih2022synthetic}. This dual encoding approach ensures compatibility with each method's algorithmic requirements.
+
+Class imbalance was addressed using SMOTENC, which generates synthetic minority class examples by interpolating between existing cases in feature space while respecting categorical feature integrity. SMOTENC was applied strictly within cross-validation folds (k=5 neighbors), meaning synthetic examples were generated only from training data after each train-test split. This within-fold application prevents data leakage that would artificially inflate model performance if oversampling preceded cross-validation \cite{sasse2025overview}. The oversampling strategy balanced all three damage classes to equal representation within each training fold, while validation sets remained entirely real data.
+
+However, SMOTENC introduces concerns when minority classes are small. The low-damage class contains only 41 examples, meaning each synthetic case represents an interpolation among 25\% of available real examples (k=5 neighbors). This raises questions about whether synthetic examples reflect physically plausible building configurations or introduce artifacts. To validate SMOTENC's impact, an ablation study compared Random Forest performance with and without oversampling on the real dataset. Results showed minimal difference: Macro F1 improved marginally from 0.581 (with SMOTENC) to 0.609 (without).
+These negligible differences suggest SMOTENC provides modest training stabilization without fundamentally altering predictive capacity or feature importance rankings. Consequently, SMOTENC is retained for minority class recall improvement and synthetic examples are used strictly for model training, not for generating physical insights about building vulnerability.
+\begin{table}[h!]
+\centering
+\caption{Feature Classification for Preprocessing}
+\label{tab:feature_classification}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Numeric Features} & \textbf{Categorical Features} \\
+\midrule
+Number of Stories & Archetype \& Occupancy\\
+Year of Construction & Retrofit Presence \\
+Building Geometry (height, length) & Building Setting Urban Context \\
+
+ Parapet Height & Roof Details (shape, substrate, cover) \\
+ Overhang Height & MWFRS (roof, wall) \\
+
+Fenestration Percentage & Wall Details (system, substrate, cladding) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{Model Selection and Validation Strategy}
+Six model families were benchmarked to ensure that the findings generalize across algorithmic approaches, a consideration for preservation applications.
+The model suite includes Decision Tree as a baseline non-linear model, Random Forest as an ensemble method, Logistic Regression as a multinomial linear baseline, Ridge Classifier as an L2-regularized linear model, Linear SVC as a support vector classifier, and XGBoost as a gradient boosting implementation.
+All the models employed balanced class weighting to address class imbalance, while hyperparameters were selected based on preliminary tuning with details available in supplementary materials.
+
+Repeated stratified K-fold cross-validation was implemented with five folds and five repeats, yielding 25 evaluation rounds per model.
+This design preserves class proportions in each fold, which proves essential given the 78\% undamaged, 11\% low damage, and 11\% significant damage distribution. 
+This repetition reduces variance in performance estimates while enabling paired statistical testing across models, as all models are evaluated on identical data splits.
+The primary metric, macro F1, represents the arithmetic mean of per-class F1 scores and treats all damage classes equally, preventing exploitation of the 78\% undamaged majority that would occur with accuracy-based or weighted metrics. 
+The overall accuracy is also reported as a secondary metric for context, but is not used for model selection, since it can be misleadingly high due to class imbalance.
+
+To identify statistically equivalent models without individually deciding, for each setting, whether hazard-neutral or hazard-inclusive,  the model achieving the best mean macro F1 score was identified first.
+For each competing model, a paired Wilcoxon signed-rank test on the 25 fold-wise macro F1 differences was performed. The Wilcoxon test is appropriate for paired, non-normal data and is recommended for classifier comparisons \cite{demsar2006}.
+ Holm-Bonferroni correction for multiple comparisons was applied, accounting for five tests per setting, and deemed models with p-values exceeding 0.05 after correction as statistically indistinguishable from the best model.
+This conservative approach establishes a high evidentiary standard for claiming equivalence and is shown in Fig~\ref{fig:validation_flow}.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{1\linewidth}{!}{ % Optional: Resizes entire diagram to fit page width
+        % --- PASTE THE TIKZPICTURE CODE HERE ---
+            \begin{tikzpicture}[
+                node distance=1.0cm,
+                auto,
+                % Style definitions
+                process/.style={
+                    rectangle, 
+                    draw=black, 
+                    fill=white, 
+                    thick, 
+                    text width=5cm, 
+                    align=center, 
+                    minimum height=1.2cm,
+                    drop shadow,
+                    font=\small
+                },
+                decision/.style={
+                    diamond, 
+                    draw=black, 
+                    fill=white, 
+                    thick, 
+                    text width=2.5cm, 
+                    align=center, 
+                    inner sep=0pt,
+                    aspect=1.8,
+                    drop shadow,
+                    font=\small
+                },
+                io/.style={
+                    trapezium, 
+                    trapezium left angle=70, 
+                    trapezium right angle=110, 
+                    draw=black, 
+                    fill=gray!10, 
+                    thick, 
+                    text width=5cm, 
+                    align=center, 
+                    minimum height=1cm,
+                    drop shadow,
+                    font=\small
+                },
+                line/.style={
+                    draw, 
+                    -Latex, 
+                    thick
+                },
+                smalllabel/.style={
+                    font=\footnotesize,
+                    color=gray,
+                    align=left
+                }
+            ]
+            
+                % --- Main Center Column ---
+                \node[io] (input) {Input Dataset \\ \scriptsize (78\% Undamaged, 11\% Low, 11\% Sig.)};
+            
+                \node[process, below=of input] (models) {
+                    \textbf{Model Initialization} \\
+                    DT, RF, LogReg, Ridge, SVC, XGB \\
+                    (Balanced Class Weights)
+                };
+            
+                \node[process, below=of models] (cv) {
+                    \textbf{Validation Protocol} \\
+                    Repeated Stratified K-Fold \\
+                    ($k=5$ folds $\times$ 5 repeats)
+                };
+            
+                \node[process, below=of cv] (eval) {
+                    \textbf{Evaluation} \\
+                    Generate 25 Macro F1 scores per model
+                };
+            
+                \node[decision, below=of eval] (identify) {Identify Best Model ($M_{best}$)};
+            
+                % Position Output node centered far below Identify
+                % We use a larger gap to fit the side blocks
+                \node[io, below=4.5cm of identify] (output) {Final Selection: \\ Statistically Equivalent Models};
+            
+            
+                % --- Side Branch (Left Side) ---
+                % Position 'Stats' to the left of the space between Identify and Output
+                \node[process, left=1.0cm of identify, yshift=-1.5cm, anchor=north east] (stats) { 
+                    \textbf{Statistical Testing} \\
+                    Paired Wilcoxon Test on Diffs \\
+                    ($M_{best}$ vs. $M_{competing}$)
+                };
+            
+                \node[process, below=0.6cm of stats] (correct) {
+                    \textbf{Correction} \\
+                    Holm-Bonferroni Adjustment \\
+                    (Check if $p > 0.05$)
+                };
+            
+            
+                % --- Connections ---
+                % Main Flow
+                \path[line] (input) -- (models);
+                \path[line] (models) -- (cv);
+                \path[line] (cv) -- (eval);
+                \path[line] (eval) -- (identify);
+            
+                % Path 1: M_best (Direct Path - Right Side)
+                % Fixed: Go Right, Down, then Left into Output East to avoid slanted collisions
+                \draw[line] (identify.east) -- ++(2.5, 0) coordinate(top_corner) -- (top_corner |- output.east) coordinate(bot_corner) node[midway, right, font=\footnotesize] {Select $M_{best}$} -- (output.east);
+            
+                % Path 2: Competitors (Comparison Path - Left Side)
+                % From Identify West to Stats
+                \draw[line] (identify.west) -| node[midway, above, font=\footnotesize] {Compare Others} (stats.north);
+                
+                % Stats flow
+                \path[line] (stats) -- (correct);
+                
+                % From Correct to Output (Into West side)
+                % Go South from Correct, turn right to Output West
+                \draw[line] (correct.south) |- (output.west);
+            
+            
+                % --- Annotations (Side Notes) ---
+                \node[right=0.8cm of models, smalllabel, text width=4.5cm] (anno_hyp) {Hyperparameters tuned on preliminary data};
+                \draw[dashed, gray] (models.east) -- (anno_hyp.west);
+            
+                \node[right=0.8cm of eval, smalllabel, text width=4.5cm] (anno_acc) {Secondary Metric: Accuracy (recorded but not used)};
+                \draw[dashed, gray] (eval.east) -- (anno_acc.west);
+            
+            \end{tikzpicture}
+        % ---------------------------------------
+    }
+    \caption{Model selection and validation methodology.}
+    \label{fig:validation_flow}
+\end{figure}
+
+
+\subsection{Feature Importance Methods}
+
+\subsubsection{Permutation Importance}
+For each model and feature set, permutation importance was calculated using a four-step procedure applied within each cross-validation fold. First, the model was trained on the training fold with SMOTENC oversampling. Second, baseline performance was evaluated on the held-out validation fold using macro F1 score. Third, for each feature individually, its values in the validation set were randomly shuffled (breaking the relationship between that feature and the outcome), and model performance was re-evaluated. The importance score was calculated as the difference between baseline and permuted performance. Fourth, importance scores were aggregated across all cross-validation folds by computing the mean importance and standard deviation for each feature.
+
+Greater performance degradation after permutation indicated higher feature importance, as it reflected the model's dependency on that feature's information. This approach is model-agnostic and robust for correlated features,  particularly historic building assessment where construction characteristics often correlate (e.g., wall structural system and construction era).
+
+
+
+\subsubsection{SHAP Analysis}
+
+While permutation importance provides global feature rankings across model families, it cannot explain how features mechanistically influence damage or identify building-specific vulnerabilities. To address this limitation, SHAP \cite{lundberg2017} was applied to the top performing models for instance-level analysis. 
+
+% SHAP quantifies each feature's contribution to individual predictions and enables examination of three critical aspects: feature interactions (e.g., whether thin walls are more problematic in taller buildings), directional effects (e.g., whether increasing wall thickness consistently reduces damage risk), and building-specific compounded vulnerabilities (e.g., identifying structures facing simultaneous risks from multiple deficiencies).
+
+SHAP analysis was computed on real  (non-augmented) validation fold data, to ensure interpretability reflects actual building behavior rather than synthetic interpolations. The TreeExplainer algorithm was employed for computational efficiency with tree-based models. However, the small low-damage class (approximately 4 low-damage cases per validation fold) necessitates cautious interpretation since insights for this minority class are based on limited real examples and may not generalize broadly. Despite this constraint, SHAP values enable preservation professionals to identify individual buildings exhibiting multiple concurrent vulnerability indicators.
+
+
+\subsubsection{Why Both Methods?}
+Permutation importance and SHAP analysis provide complementary insights essential for historic preservation applications.
+Permutation importance delivers global rankings validated across multiple equivalent models and proves less sensitive to feature correlations, ensuring that identified vulnerabilities reflect genuine predictive power rather than multicollinearity artifacts.
+Conversely, SHAP analysis provides mechanistic understanding by revealing interaction effects, such as the compounding risk when unknown walls combine with absent retrofits, and provides instance-level explanations enabling retrofit prioritization for specific buildings.
+Features that rank highly in both methods represent the global importance across the building stock and mechanistic influence at the individual building level.
+
+\subsection{Limitations and Ethical Considerations}
+There are several limitations that frame the interpretation of the results.
+The dataset of 382 buildings, while sufficient for identifying main effects, limits the detection of subtle interactions, particularly for the minority ``Low" damage class.
+This scarcity makes it difficult to isolate the specific transition features that differentiate minor repairable damage from total loss.
+Additionally, the results are specific to masonry construction in Southeastern U.S. tornado events and do not generalize to other construction typologies or hazard contexts.
+Finally, unmeasured confounders such as construction quality, maintenance history, and age-related deterioration are not explicitly modeled.
+
+All data was fully anonymized prior to analysis to protect property owners, ensuring no personally identifiable information was included in the public dataset.
+Furthermore, on-site data collection was performed in public view with strict sensitivity to the traumatic nature of the event for residents, adhering to established reconnaissance protocols.
+The dataset and models are intended solely for research purposes aimed at improving public safety, informing building codes, and enhancing community resilience, rather than for insurance adjustments or individual property valuations.
+
+
+\section{Results}
+
+\subsection{Model Performance and Statistical Validation}
+
+Table~\ref{tab:model_perf} summarizes the performance of the six candidate models. The Random Forest (RF) and XGBoost models significantly outperformed linear baseline models, indicating that the relationships between building features and tornado damage are non-linear and complex.
+
+\begin{table}[h!]
+\centering
+\caption{Model Performance (averaged over 25 folds)}
+\label{tab:model_perf}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Macro F1-Score} & \textbf{Accuracy} \\
+\midrule
+\textbf{Random Forest} & \textbf{0.58 $\pm$ 0.08} & \textbf{0.83 $\pm$ 0.04} \\
+XGBoost & 0.58 $\pm$ 0.08 & 0.84 $\pm$ 0.04 \\
+Decision Tree & 0.53 $\pm$ 0.07 & 0.77 $\pm$ 0.05 \\
+Ridge Classifier & 0.52 $\pm$ 0.07 & 0.70 $\pm$ 0.05 \\
+Logistic Regression & 0.51 $\pm$ 0.06 & 0.72 $\pm$ 0.05 \\
+Linear SVC & 0.51 $\pm$ 0.07 & 0.71 $\pm$ 0.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Statistical testing  confirmed that Random Forest and XGBoost are statistical equivalents ($p=1.0$), while all other models performed significantly worse ($p < 0.05$). Random Forest was selected as the primary model for interpretation due to its stability and slightly better interpretability for categorical feature interactions.
+
+% \begin{table}[h!]
+% \centering
+% \caption{Statistical Equivalence Testing (Reference: Random Forest)}
+% \label{tab:stat_equiv}
+% \begin{tabular}{lccc}
+% \toprule
+% \textbf{Comparison} & \textbf{Difference in Mean F1} & \textbf{p-value} & \textbf{Result} \\
+% \midrule
+% RF vs. XGBoost & 0.003 & 1.000 & Equivalent \\
+% RF vs. Decision Tree & 0.049 & 0.001 & RF Superior \\
+% RF vs. Ridge & 0.064 & 0.005 & RF Superior \\
+% RF vs. Logistic Reg. & 0.071 & 0.001 & RF Superior \\
+% RF vs. Linear SVC & 0.076 & 0.001 & RF Superior \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+\subsection{Feature Importance (Permutation Analysis)}
+
+Figure~\ref{fig:perm_imp} presents the permutation importance rankings for the Random Forest model. The results unequivocally show that distance from the tornado path is the dominant predictor of damage. This validates the physical reality that proximity to the vortex core outweighs most structural differences. However, crucially for preservation, several building features rank above the random noise threshold, indicating they offer statistically significant modifications to vulnerability even after accounting for distance.
+
+Key building features identified include retrofit type (the presence and type of structural retrofits) and wall cladding (the material and condition of the exterior skin), which act as critical modifiers of vulnerability. Additionally, roof substrate (the material decking beneath the roof covering) and roof slope (the geometry influencing aerodynamic uplift) emerged as significant predictors, underscoring the importance of the building envelope's integrity and aerodynamic profile in tornado resistance.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{tornado_vulnerability_outputs_damage_target/delta_accuracy_Hazard-Neutral.png}
+    \caption{Permutation Importance Ranking. Features to the right of the dashed line (Random Noise) are considered statistically significant predictors.}
+    \label{fig:perm_imp}
+\end{figure}
+
+\subsection{Mechanistic Insights (SHAP Analysis)}
+
+SHAP analysis provides deeper insight into the directionality of risk. Figure~\ref{fig:shap_class2} illustrates the features driving ``Significant Damage'' (Class 2).
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{tornado_vulnerability_outputs_damage_target/shap_beeswarm_class2.png}
+    \caption{SHAP Summary Plot for Significant Damage (Class 2). High feature values are red, low are blue. A point to the right indicates the feature increases the probability of significant damage.}
+    \label{fig:shap_class2}
+\end{figure}
+
+
+The SHAP plots reveal mechanisms consistent with wind engineering principles. As expected, lower values of distance to the tornado path are strongly associated with increased risk of significant damage. Proximity serves as an intensity proxy, where the extreme wind loads and debris impact of the vortex core overwhelm even robust structures. Construction year shows a slight tendency where older buildings have higher damage probability. This trend often reflects the iterative strengthening of building codes, most notably post-1980 enhancements in wind-load provisions or simply material degradation over time. However, for undamaged buildings, age is secondary to external hazard intensity, indicating that well-maintained older structures can survive when not in the direct path.
+
+Wall substrate features exhibit class-dependent effects reflecting structural capacity. In significantly damaged buildings, specific masonry types exhibit high positive SHAP values, signaling vulnerability under extreme lateral pressures \cite{sparks1989wind}. Conversely, for undamaged buildings, robust wall systems show a protective influence. Roof configuration strongly influences uplift vulnerability. Flat roof geometries and tall parapets emerge as vulnerability factors for significant damage. Flat roofs experience higher suction forces at corners and edges \cite{razavi2021effects}, while tall parapets act as unbraced vertical cantilevers. Parapet overturning generates large moments at the base of masonry elements, which become failure initiation points when roof diaphragms lack adequate anchorage to resist these lateral forces \cite{ingham_griffith}.
+
+Wind vulnerability is compounded by high fenestration percentages. The building envelope acts as the first line of defense; once windows breach, internal pressure rapidly increases, significantly amplifying uplift forces on the roof \cite{wang2018experimental}. In significantly damaged buildings, high fenestration percentages exhibit predominantly positive SHAP contributions, likely reflecting this internal pressurization mechanism. Finally, SHAP patterns across structural features converge on a critical insight: building performance is governed by load path continuity. Features exhibiting scattered, bidirectional SHAP values (wall substrate, wall length) indicate that their influence is conditional on complementary characteristics like connection integrity. A building with thick masonry walls will fail if roof-to-wall connections are inadequate to transfer uplift forces. This validation supports shifting preservation strategy from global strengthening to targeted retrofitting of connections.
+
+Conversely, for the ``Undamaged'' class (Figure~\ref{fig:shap_class0}), large distances (red dots) are the primary driver of survival, but building features like specific retrofit types also contribute positively to survival probability.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{tornado_vulnerability_outputs_damage_target/shap_beeswarm_class0.png}
+    \caption{SHAP Summary Plot for Undamaged Buildings (Class 0). Large distance (red) is the primary driver of survival.}
+    \label{fig:shap_class0}
+\end{figure}
+
+\subsection{Comparison of Interpretation Methods}
+Table~\ref{tab:perm_vs_shap} compares the top features identified by Permutation Importance (global model reliance) versus SHAP (instance-level contribution to significant damage). While distance consistently leads both rankings, divergences appear in secondary features. For instance, retrofit type and foundation type rank higher in SHAP (Ranks 5 and 4) than in Permutation Importance (Ranks 9 and 7), suggesting these features play a critical role in distinguishing specific significant damage cases, even if their global impact on accuracy is slightly lower. Conversely, features like roof substrate are critical for global accuracy (Rank 2) but have more diffuse instance-level effects (Rank 19).
+
+\begin{table}[h!]
+\centering
+\caption{Comparison of Top Features: Permutation Importance vs. SHAP (Class 2 - Significant Damage)}
+\label{tab:perm_vs_shap}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{Top 10 Perm Importance?} & \textbf{SHAP Rank} \\
+\midrule
+distance\_km & Yes (Rank 1) & 1 \\
+roof\_substrate\_type\_u & Yes (Rank 2) & 19 \\
+wall\_thickness & Yes (Rank 3) & 7 \\
+overhang\_length\_u & Yes (Rank 4) & 25 \\
+archetype & Yes (Rank 5) & 21 \\
+wall\_fenestration\_per\_s & Yes (Rank 6) & 23 \\
+foundation\_type\_u & Yes (Rank 7) & 4 \\
+wall\_length\_side & Yes (Rank 8) & 16 \\
+retrofit\_type\_u & Yes (Rank 9) & 5 \\
+building\_area\_m2 & Yes (Rank 10) & 11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{SHAP Interaction Analysis}
+SHAP interaction analysis revealed patterns where hazard exposure amplifies specific building vulnerabilities. For Class 2 (Significant Damage), the strongest interactions involved distance combined with occupancy and wall substrate, reflecting how proximity to the tornado compounds risks inherent to specific building functions and material systems. Table~\ref{tab:shap_interactions} lists the top feature interactions. Notably, purely structural interactions such as foundation type $\times$ retrofit type also emerge as top drivers, suggesting that the effectiveness of retrofits is heavily dependent on the foundation system's ability to transfer loads.
+
+\begin{table}[h!]
+\centering
+\caption{Key Feature Interactions Driving Significant Damage (SHAP Analysis)}
+\label{tab:shap_interactions}
+\begin{tabular}{lc}
+\toprule
+\textbf{Feature Interaction} & \textbf{Strength} \\
+\midrule
+Distance $\times$ Occupancy & 0.0125 \\
+Occupancy $\times$ Wall Substrate & 0.0121 \\
+Distance $\times$ Wall Substrate & 0.0092 \\
+Foundation $\times$ Occupancy & 0.0086 \\
+Foundation $\times$ Retrofit Type & 0.0085 \\
+Roof Shape $\times$ Wall Substrate & 0.0079 \\
+Distance $\times$ Foundation & 0.0078 \\
+Occupancy $\times$ Retrofit Type & 0.0078 \\
+Foundation $\times$ Wall Cladding & 0.0073 \\
+Foundation $\times$ Wall Substrate & 0.0072 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+While these patterns identify feature combinations statistically associated with damage outcomes, they represent correlations rather than confirmed causal mechanisms. The strongest interactions warrant targeted engineering validation to establish physical causality and quantify structural response under controlled loading conditions.
+
+\subsection{Synthesis: Feature Importance Mapped to Failure Mechanisms}
+The integration of permutation importance and SHAP analysis enables systematic mapping of statistical predictors to established wind engineering failure modes. This synthesis organizes findings according to documented tornado damage progressions in masonry structures, identifying which failure pathways govern vulnerability in the historic masonry buildings \cite{kaushal2023understanding, masoomi2018}. Table~\ref{tab:failure_mechanisms} categorizes high-importance features by their primary mechanical influence, prioritizing engineering validation efforts for mechanisms with both strong statistical evidence and critical life-safety implications.
+
+\begin{table}[h!]
+\centering
+\caption{Feature Importance by Structural Failure Mechanism}
+\label{tab:failure_mechanisms}
+\small
+\begin{tabular}{llccc}
+\toprule
+\textbf{Mechanism} & \textbf{Associated Features} & \textbf{Perm. Imp.} & \textbf{SHAP Evidence} & \textbf{Eng. Priority} \\
+\midrule
+Roof uplift & roof\_substrate, roof\_slope & High & Positive for flat/light & CRITICAL \\
+Parapet overturning & parapet\_height & Moderate & Threshold effects & HIGH \\
+Wall out-of-plane & wall\_thickness, anchorage & High & Thin walls vulnerable & CRITICAL \\
+Envelope breach & fenestration\_per, cladding & Medium & High \% increases risk & MODERATE \\
+Progressive collapse & retrofit\_type, foundation & High & Absence critical & CRITICAL \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discussion}
+
+The results confirm that while hazard exposure (distance) is the primary determinant of survival, intrinsic building features play a measurable role in the ``transition zone'' where damage is likely but not guaranteed.
+
+\subsection{Roof System Vulnerabilities}
+Roof system failures dominate the damage patterns, documented in 60--80\% of significantly damaged structures \cite{nashvillesteer2020,prevatt2012joplin}. Three critical validation priorities emerged: aerodynamic loading, connection capacity evolution, and progressive membrane failure.
+
+Flat roofs ranked among top predictors, consistent with wind tunnel measurements showing higher suction versus gabled roofs \cite{razavi2021effects,Kopp2005}. However, it is not yet possible to distinguish whether failures stem from excessive uplift forces or inadequate connections. CFD modeling of tornado vortices on buildings with varied roof slopes could quantify pressure distributions, while wind tunnel testing would establish whether quasi-steady design assumptions adequately capture transient tornado effects.
+
+Construction year functions as a proxy for connection improvements: pre-1980 toenails versus post-1994 engineered clips. Destructive testing of connections extracted from buildings spanning construction eras would establish in-situ capacity distributions accounting for aging and degradation. Roof systems showed vulnerability to edge-initiated peeling where wind penetration creates expanding uplift zones. Component testing of representative configurations under simulated uplift would document initiation pressures and propagation rates.
+
+\subsection{Wall System Interactions}
+Wall failures reflect combined geometric and material vulnerabilities, with thin unreinforced masonry walls in tall buildings showing disproportionate damage rates. The critical validation priorities emerged: anchorage capacity and preservation-sensitive interventions.
+
+The analysis identified wall substrate and absent retrofits as independent predictors pushing toward severe damage. This suggests wall-to-diaphragm and wall-to-roof anchors deserve investigation alongside wall reinforcement. In-situ pull-out testing and full-scale wall-roof assembly testing under simulated wind pressures would measure load redistribution when connections fail sequentially.
+
+While invasive techniques such as grouted rebar or fiber-reinforced polymer wraps provide well-documented strengthening, these permanently alter masonry fabric. A more preservation-sensitive approach would investigate reversible strong-back systems or internal moment frames providing out-of-plane support without modifying exterior appearance or original material. Component testing comparing strengthening effectiveness (capacity improvement per dollar invested) and reversibility of various intervention strategies would establish whether non-invasive methods achieve adequate protection thresholds.
+
+Envelope breach through window failure and cladding loss initiates progressive damage via internal pressurization. Cladding loss initiates cascading damage through water intrusion and debris generation. Large-scale testing of prevalent systems (vinyl siding, brick veneer with corrugated ties) under pulsating tornado-representative pressures would establish failure thresholds.
+
+\subsection{Preservation Philosophy and Reversibility}
+
+Any structural intervention in a historic building must be weighed against the Secretary of the Interior's Standards for Rehabilitation. Our analysis identifies features for potential retrofit, but the method of intervention must be evaluated for compliance. To guide this evaluation, a compatibility assessment framework for candidate interventions (Table~\ref{tab:intervention_compatibility}) is proposed. Here a distinction is made between \textit{mechanical reversibility} (the intervention can be physically removed) and \textit{material reversibility} (removal restores the original condition without permanent alteration).
+
+\begin{table}[h!]
+\centering
+\caption{Preservation Compatibility of Candidate Interventions}
+\label{tab:intervention_compatibility}
+\small
+\begin{tabular}{p{3cm}p{2.2cm}p{2.2cm}p{5cm}}
+\toprule
+\textbf{Intervention} & \textbf{Standard 2 (Character)} & \textbf{Standard 10 (Reversible)} & \textbf{Assessment} \\
+\midrule
+Hurricane straps & Yes - Hidden & Mech: Yes / Mat: No & Moderate compatibility; lag bolts create permanent holes in timber \\
+Wall-to-diaphragm anchors & Yes - Interior & Mech: Partial / Mat: No & Moderate; anchor holes remain after removal \\
+Grouted rebar & No - Invasive & Mech: No / Mat: No & Low compatibility and irreversible; avoid except for life-safety emergencies \\
+FRP wraps & No - Visible & Mech: No / Mat: No & Low compatibility; moisture entrapment risk; investigate alternatives \\
+Strong-back systems & Yes - Interior & Mech: Yes / Mat: Partial & High compatibility; mechanical fasteners minimize damage \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Risk-Informed Decision-Making for Preservation Authorities}
+
+While the findings demonstrate that 77\% of historic URM buildings survived tornado exposure with no structural damage, this encouraging statistic requires careful contextualization for preservation policy. Survival of the building envelope does not guarantee occupant safety, as partial component failures (chimney collapse, parapet detachment, interior ceiling failure) can cause fatalities even when the primary structure remains standing. Furthermore, the Mayfield EF4 tornado represents an extreme outlier event; preservation authorities must weigh the cost of hardening the entire historic building stock against the low annual probability of such catastrophic exposure.
+
+\subsubsection{Hazard Return Periods and Cost-Benefit Analysis}
+Tornado hazard maps indicate that EF4+ tornadoes have return periods exceeding 1,000 years for most locations in the study region, while EF1-EF2 events occur with 50-100 year return periods. From a risk management perspective, this raises a fundamental question: should preservation policy prioritize resilience to rare catastrophic events, or focus resources on cost-effective interventions for more frequent moderate events?
+
+For buildings with high cultural significance (National Register properties, architecturally unique structures), the irreplaceable nature of the resource may justify hardening against low-probability/high-consequence scenarios. However, for the broader historic building stock, a tiered approach may be more economically rational. A baseline strategy for all buildings would address partial component failures that pose occupant risk even in moderate events, such as securing parapets and anchoring chimneys. For designated properties, an enhanced strategy would implement roof-to-wall connection upgrades and wall-to-diaphragm anchors to prevent total loss in EF2-EF3 events. Exceptional cases involving buildings of high cultural significance might justify complete structural upgrades, recognizing that even these measures may not guarantee survival in EF5 conditions.
+
+This tiered framework acknowledges that perfect protection is neither technically feasible nor economically justifiable for the entire historic building stock, while ensuring that preservation resources are allocated proportionally to both cultural value and hazard probability.
+
+\subsubsection{Limitations of Survival-Based Metrics}
+The current analysis focuses on building-level damage classification, but preservation authorities must also consider interior hazards. Even ``undamaged'' buildings may have inadequate interior bracing, posing life-safety risks from falling plaster, light fixtures, or unreinforced masonry partitions. These hazards are not captured in exterior damage assessments. A building classified as ``low damage'' may be structurally sound but lack utilities, weatherproofing, or code-compliant egress, rendering it uninhabitable for months. Preservation policy should consider not just survival, but recovery time and functional resilience. Also, the dataset captures single-event exposure, but buildings experiencing multiple moderate events over decades may accumulate damage (e.g., mortar deterioration, connection fatigue) that compromises performance in subsequent events. Longitudinal studies are needed to assess cumulative vulnerability.
+
+\subsection{Future Work: Quantifying Preservation Interventions}
+While the proposed tiered framework provides a strategic roadmap, it currently lacks the quantitative grounding necessary for precise cost-benefit analysis. Future work must bridge this gap by establishing typical retrofit costs per building, using data from National Park Service guidance or industry standards to move the framework from aspirational to operational. Additionally, finite element modeling (FEM) is required to quantify how much specific interventions, such as parapet bracing, reduce failure probability under varying wind loads, following FEM frameworks established for masonry systems \cite{masoomi2018}. Finally, a decision-support tool should be developed to help communities prioritize interventions within fixed budgets, translating these technical findings into actionable policy.
+
+\section{Conclusions}
+This study demonstrates that machine learning can identify vulnerability factors in historic masonry buildings while challenging prevailing assumptions about their fragility. Seventy-eight percent of historic buildings in this dataset survived EF0-EF4 tornadoes with minimal or no damage. By filtering out circular variables (EF rating) and controlling for exposure (Distance), the analysis confirmed that while proximity to the tornado is the dominant factor, specific building features---roof geometry, substrate type, and cladding integrity---are statistically significant predictors of performance.
+
+The Random Forest model and SHAP analysis provide a data-driven justification for prioritizing roof-to-wall connections and envelope integrity in preservation retrofits. Rather than validatin blanket condemnation of URM structures, this work supports a \textbf{tiered, risk-informed framework} for preservation. By targeting interventions—such as parapet bracing and chimney anchorage—to the "transition zone" where building performance determines survival, preservation authorities can balance structural safety with the stewardship of cultural heritage.
+
+
+\section*{Data Availability Statement}
+The dataset mentioned in this study is available on DesignSafe repository under project number \href{https://www.designsafe-ci.org/data/browser/public/designsafe.storage.published/PRJ-5614}{PRJ-5614} (DOI: \href{https://doi.org/10.17603/ds2-7xm0-e324}{https://doi.org/10.17603/ds2-7xm0-e324}) and \href{https://www.designsafe-ci.org/data/browser/public/designsafe.storage.published/PRJ-6212}{PRJ-6212} (DOI: \href{https://doi.org/10.17603/ds2-d377-qm08}{https://doi.org/10.17603/ds2-d377-qm08}). 
+Analysis code and additional materials are available from the corresponding author upon reasonable request.
+
+\section*{Acknowledgments}
+This material is based upon work supported by the National Science Foundation under Grant No. IIS-2123343, CMMI-2222849, and CMMI-2442653. The authors thank the StEER Network and field reconnaissance teams for their contributions.
+
+\appendix
+
+\section{Detailed Classification Report}
+
+For transparency, Table~\ref{tab:classification_report} provides per-class performance metrics for the Random Forest model.
+
+\begin{table}[h!]
+\centering
+\caption{Per-Class Performance Metrics (Random Forest)}
+\label{tab:classification_report}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support (\%)} \\
+\midrule
+0 (Undamaged) & 0.89 & 0.92 & 0.90 & 78\% \\
+1 (Low) & 0.23 & 0.23 & 0.23 & 5\% \\
+2 (Significant) & 0.72 & 0.58 & 0.64 & 16\% \\
+\midrule
+\textbf{Macro Avg} & 0.61 & 0.58 & 0.59 & -- \\
+\textbf{Weighted Avg} & 0.82 & 0.83 & 0.82 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The low performance on Class 1 highlights the difficulty in distinguishing minor damage from undamaged states, likely due to data sparsity in this transition category.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{tornado_refs}
+
+\end{document}
