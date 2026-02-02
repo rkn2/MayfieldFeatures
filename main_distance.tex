@@ -187,47 +187,14 @@ This guardrail served two purposes for preservation applications;
 This random noise feature serves as a quality control mechanism with two functions. First, if random noise ranks among important predictors, the analysis is flawed—indicating data leakage or spurious correlations that would render any preservation recommendations unreliable. Second, the noise feature provides an objective threshold that any building feature ranking below random noise lacks genuine predictive signal and should be excluded from interpretation, preventing preservation resources from being misdirected toward irrelevant characteristics.
 
 \subsection{Data Preparation}
-Two hazard variables helped quantify tornado exposure: EF rating and distance from tornado path. EF rating represents tornado intensity at each building location that was assigned during damage surveys. These ratings (EF0 through EF5) were encoded as integers 0 through 5, while subEF events (wind speeds below EF0 threshold) were coded as -1. Distance from tornado path represents the shortest distance from each building centroid to the tornado track centerline, calculated as point-to-segment distance using planar approximation with latitude-dependent coordinate scaling \cite{chopde2013landmark}. 
+Two hazard variables helped quantify tornado exposure: EF rating and distance from tornado path. EF rating represents tornado intensity at each building location that was assigned during damage surveys. These ratings (EF0 through EF5) were encoded as integers 0 through 5, while subEF events (wind speeds below EF0 threshold) were coded as -1. Distance from tornado path represents the shortest distance from each building centroid to the tornado track centerline, calculated as Haversine distance \cite{chopde2013landmark}. 
 
 One of the challenges with tornado damage modeling is the potential for circular reasoning when using EF ratings as predictors. Since EF ratings are post-hoc intensity estimates often derived from the building damage \cite{mcdonald2010enhanced}, including them creates a tautological loop where the outcome (damage) implicitly informs the predictor (EF). To address this, the analysis was conducted under two distinct conditions: First, the Hazard-Neutral approach  was considered to represent structural truth. This condition excluded EF rating and distance-to-track, forcing the model to predict damage solely based on intrinsic building characteristics (e.g., geometry, materials, age). This was the primary lens for identifying structural vulnerabilities, as it eliminates the circularity of the EF scale.
 Second, the Hazard-Inclusive approach was implemented to provide contextual control.
 This condition includes hazard features to quantify how much predictive power is gained by knowing the wind intensity and distance to the building. While this introduces circularity, it serves as a necessary control to benchmark the relative importance of structural features against the overwhelming force of the winds.
 The findings are explicitly prioritized from the Hazard-Neutral condition for structural recommendations, treating Hazard-Inclusive results primarily as a validation of the model's ability to capture basic physical reality (i.e., stronger winds cause more damage).
 
-\begin{table}[h!]
-\centering
-\caption{Dataset Composition by Key Features (with Missingness)}
-\label{tab:dataset_composition}
-\small
-\begin{tabular}{llcc}
-\toprule
-\textbf{Feature} & \textbf{Category} & \textbf{Count (\%)} & \textbf{Missing (\%)} \\
-\midrule
-Number of Stories & 1 Story & 250 (65\%) & 0\% \\
-& 2 Stories & 110 (28\%) & \\
-& 3+ Stories & 26 (7\%) & \\
-\midrule
-Roof Shape & Gable & 280 (73\%) & 0\% \\
-& Hip & 60 (16\%) & \\
-& Flat & 46 (12\%) & \\
-\midrule
-Foundation Type & Continuous & 300 (78\%) & 36\% \\
-& Pier & 50 (13\%) & \\
-& Slab & 36 (9\%) & \\
-\midrule
-Roof Substrate & Board/Plank & 304 (80\%) & 19.6\% \\
-Wall Substrate & URM/Brick & 182 (48\%) & 13.1\% \\
-Retrofit Type & Present & 107 (28\%) & 8\% \\
-Wall Thickness & Mean: 380mm & -- & 36\% \\
-Fenestration (\%) & Mean: 15-20\% & -- & 15-20\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-High missingness (>10\%) is observed for several features, particularly those requiring interior access or detailed inspection. 
-This missingness is likely informative rather than random: buildings with extensive damage may have had inaccessible interiors, while remote-sensing-only assessments could not document hidden details.
-For retrofit-related features, missing data often indicates ``no retrofit was documented during reconnaissance,'' which can mean there was no retrofit or inaccessible due to building collapse. Preprocessing preserved this information through two strategies, median imputation for numeric categories and ordinal encoding for categorical features. This allows models to learn whether "unknown" status correlates with damage. For instance, if buildings with "unknown" wall substrates exhibit systematically higher vulnerability than those with confirmed construction details.
 
-However, the authors acknowledge that this high rate of missingness limits the certainty of the conclusions regarding these specific variables. Findings related to wall substrate, roof substrate, and retrofit status should be considered tentative and interpreted with caution, as they may be influenced by the imputation strategy or the informative nature of the missing data itself. Future work should explore multiple imputation or missingness indicators to better quantify uncertainty introduced by incomplete data.
 
 \subsubsection{Preprocessing}
 Standard preprocessing procedures were applied to prepare data for modeling while preserving information content. Numeric features shown in \ref{tab:feature_classification} employed median imputation for missing values, replacing absent data with the dataset median to maintain distributional properties. Categorical features required different encoding strategies depending on the analytical method: ordinal encoding for the Synthetic Minority Over-sampling Technique for Nominal and Continuous data (SMOTENC) pipeline, and one-hot encoding for permutation importance analysis \cite{ratih2022synthetic}. This dual encoding approach ensures compatibility with each method's algorithmic requirements.
@@ -607,7 +574,7 @@ Progressive collapse & retrofit\_type, foundation & High & Absence critical & CR
 \subsection{Sensitivity Analysis: Impact of Missing Data}
 Given the high missingness in features such as wall thickness (36\%) and foundation type (36\%), a sensitivity analysis was conducted to evaluate the robustness of these findings under different imputation strategies. We compared the baseline Median/Informative imputation against Multiple Imputation by Chained Equations (MICE) and Missingness Indicators.
 
-The results confirm that \textbf{distance to tornado path} remains the dominant predictor (Rank 1) across all missingness assumptions, demonstrating the robustness of the hazard-focused model. However, the importance of \textbf{wall thickness} drops significantly under MICE (Rank 16 vs. Rank 5 in baseline), suggesting that its predictive power is partially derived from ``informative missingness''---i.e., the data is missing because the walls collapsed or were inaccessible due to severe damage. Conversely, \textbf{foundation type} rises in importance under MICE (Rank 5 vs. Rank 27), indicating that if foundation details were effectively recovered, they would likely serve as critical predictors of survival. These findings reinforce the tiered framework: while global hazard parameters are robust, specific structural attributes like wall thickness should be interpreted with the caveat that their signals may reflect damage-induced unobservability.
+The results confirm that distance to tornado path remains the dominant predictor (Rank 1) across all missingness assumptions, demonstrating the robustness of the hazard-focused model. However, the importance of wall thickness drops significantly under MICE (Rank 16 vs. Rank 5 in baseline), suggesting that its predictive power is partially derived from ``informative missingness''---i.e., the data is missing because the walls collapsed or were inaccessible due to severe damage. Conversely, foundation type rises in importance under MICE (Rank 5 vs. Rank 27), indicating that if foundation details were effectively recovered, they would likely serve as critical predictors of survival. These findings reinforce the tiered framework: while global hazard parameters are robust, specific structural attributes like wall thickness should be interpreted with the caveat that their signals may reflect damage-induced unobservability.
 
 \section{Discussion}
 
@@ -707,7 +674,50 @@ For transparency, Table~\ref{tab:classification_report} provides per-class perfo
 
 The low performance on Class 1 highlights the difficulty in distinguishing minor damage from undamaged states, likely due to data sparsity in this transition category.
 
+\section{Missing Data and Sensitivity Analysis}
+
+High missingness (>10\%) is observed for several features in the dataset (Table~\ref{tab:dataset_composition}), particularly those requiring interior access or detailed inspection. This missingness is likely informative rather than random: buildings with extensive damage may have had inaccessible interiors, while remote-sensing-only assessments could not document hidden details. For retrofit-related features, missing data often indicates ``no retrofit was documented during reconnaissance,'' which can mean there was no retrofit or inaccessible due to building collapse.
+
+\begin{table}[h!]
+\centering
+\caption{Dataset Composition by Key Features (with Missingness)}
+\label{tab:dataset_composition}
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Feature} & \textbf{Category} & \textbf{Count (\%)} & \textbf{Missing (\%)} \\
+\midrule
+Number of Stories & 1 Story & 250 (65\%) & 0\% \\
+& 2 Stories & 110 (28\%) & \\
+& 3+ Stories & 26 (7\%) & \\
+\midrule
+Roof Shape & Gable & 280 (73\%) & 0\% \\
+& Hip & 60 (16\%) & \\
+& Flat & 46 (12\%) & \\
+\midrule
+Foundation Type & Continuous & 300 (78\%) & 36\% \\
+& Pier & 50 (13\%) & \\
+& Slab & 36 (9\%) & \\
+\midrule
+Roof Substrate & Board/Plank & 304 (80\%) & 19.6\% \\
+Wall Substrate & URM/Brick & 182 (48\%) & 13.1\% \\
+Retrofit Type & Present & 107 (28\%) & 8\% \\
+Wall Thickness & Mean: 380mm & -- & 36\% \\
+Fenestration (\%) & Mean: 15-20\% & -- & 15-20\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Preprocessing preserved this information through two strategies: median imputation for numeric categories and ordinal encoding for categorical features. This allows models to learn whether ``unknown'' status correlates with damage. However, recognizing that this high rate of missingness limits certainty, a sensitivity analysis was conducted.
+
+\subsection{Sensitivity Analysis Results}
+Given the high missingness in features such as wall thickness (36\%) and foundation type (36\%), we evaluated the robustness of findings under different imputation strategies: (1) Baseline Median/Informative, (2) Multiple Imputation by Chained Equations (MICE), and (3) Missingness Indicators.
+
+The results confirm that \textbf{distance to tornado path} remains the dominant predictor (Rank 1) across all missingness assumptions, demonstrating the robustness of the hazard-focused model. However, the importance of \textbf{wall thickness} drops significantly under MICE (Rank 16 vs. Rank 5 in baseline), suggesting that its predictive power is partially derived from ``informative missingness''---i.e., the data is missing because the walls collapsed or were inaccessible due to severe damage. Conversely, \textbf{foundation type} rises in importance under MICE (Rank 5 vs. Rank 27), indicating that if foundation details were effectively recovered, they would likely serve as critical predictors of survival. These findings reinforce the tiered framework: while global hazard parameters are robust, specific structural attributes like wall thickness should be interpreted with the caveat that their signals may reflect damage-induced unobservability.
+
 \bibliographystyle{elsarticle-num}
 \bibliography{tornado_refs}
 
 \end{document}
+
+
