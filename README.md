@@ -29,6 +29,12 @@ This repository has been updated to focus on a **Distance-Based Model** for torn
 *   `shap_analysis_distance.py`: Generates the bee-swarm plots referenced in `main_distance.tex`.
     *   **Outputs:** `shap_beeswarm_class*.png`
 
+### Note on Feature Selection (RFE)
+This study deliberately employs **Permutation Importance + SHAP** rather than iterative feature selection methods like **Recursive Feature Elimination (RFE)**. 
+- **Rationale:** RFE is designed to optimize predictive efficiency (black-box accuracy) by removing redundant features. 
+- **Preservation Focus:** In structural pathology, "statistically redundant" features (e.g., matching a raw dimension with a slenderness ratio) are often **physically significant**. By avoiding RFE, we preserve the full "constellation of defects," allowing the analysis to identify interdependent vulnerabilities that would be pruned in a purely efficiency-driven model.
+- **Validation:** Exploratory RFE was conducted to verify feature stability, but the final methodology retains all actionable structural features to support comprehensive engineering assessment. (See `tornado_vulnerability_outputs_rfe/RFE_JUSTIFICATION.md` for details).
+
 ### 3. Data Visualization & Statistics
 *   `generate_dist_plot.py`: Generates the Distance vs. Damage distribution plot.
 *   `generate_supp_plots.py`: Generates supplementary figures.
