@@ -35,6 +35,12 @@ This study deliberately employs **Permutation Importance + SHAP** rather than it
 - **Preservation Focus:** In structural pathology, "statistically redundant" features (e.g., matching a raw dimension with a slenderness ratio) are often **physically significant**. By avoiding RFE, we preserve the full "constellation of defects," allowing the analysis to identify interdependent vulnerabilities that would be pruned in a purely efficiency-driven model.
 - **Validation:** Exploratory RFE was conducted to verify feature stability, but the final methodology retains all actionable structural features to support comprehensive engineering assessment. (See `tornado_vulnerability_outputs_rfe/RFE_JUSTIFICATION.md` for details).
 
+### Note on Hierarchical Clustering
+Similarly, the study avoided using **Hierarchical Clustering** (unsupervised grouping) as a preprocessing step.
+- **Goal Conflict:** Clustering is useful for finding "hidden archetypes," but it often merges distinct features into abstract groups.
+- **Loss of Granularity:** For structural pathology, it is critical to keep features individual (e.g., separating "Wall Thickness" from "Wall Slenderness") even if they correlate. This ensures that the SHAP interaction analysis can map specific physical characteristics directly to failure modes, rather than discussing abstract "clusters" that generic preservationists cannot easily translate into retrofit strategies.
+- **Methodological Choice:** The current supervised multi-model framework already handles collinearity through tree-based ensembles (Random Forest/XGBoost), providing a more direct link between structural variables and damage outcomes.
+
 ### 3. Data Visualization & Statistics
 *   `generate_dist_plot.py`: Generates the Distance vs. Damage distribution plot.
 *   `generate_supp_plots.py`: Generates supplementary figures.
