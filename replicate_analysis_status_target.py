@@ -69,15 +69,14 @@ def load_and_preprocess_data():
 def engineer_features(df):
     print("Engineering features...")
     
-    # Target Mapping - USING status_u instead of degree_of_damage_u
+    # Target Mapping - USING status_u with 3-CLASS STRUCTURE (matching degree_of_damage_u)
     def map_target(val):
         if pd.isna(val): return np.nan
         s = str(val).strip().lower()
         if s == 'undamaged': return 'Undamaged'
-        if s == 'minor': return 'Minor'
-        if s == 'moderate': return 'Moderate'
-        # Merge severe and destroyed due to low sample count
-        if s in ['severe', 'destroyed']: return 'Severe'
+        if s == 'minor': return 'Low'
+        # Moderate, Severe, Destroyed all map to Significant
+        if s in ['moderate', 'severe', 'destroyed']: return 'Significant'
         return np.nan
 
     target_col = 'status_u'
@@ -88,7 +87,7 @@ def engineer_features(df):
     df['target'] = df[target_col].apply(map_target)
     df = df.dropna(subset=['target'])
     
-    print(f"Target distribution:\n{df['target'].value_counts()}")
+    print(f"Target distribution (3-class from status_u):\n{df['target'].value_counts()}")
     
     # Hazard Features (EF & Distance)
     def parse_ef(val):
